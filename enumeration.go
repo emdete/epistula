@@ -17,15 +17,18 @@ var pos_mail_y = 3
 //var subjects = map[string]string{}
 var subjects []string
 
-func EnumerationFeed(s tcell.Screen, ev *tcell.EventKey) (ret bool) {
+func EnumerationEventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
-	switch ev.Key() {
-	case tcell.KeyUp:
-		pos_mail_y--
-		ret = true
-	case tcell.KeyDown:
-		pos_mail_y++
-		ret = true
+	switch ev := event.(type) {
+	case *tcell.EventKey:
+		switch ev.Key() {
+		case tcell.KeyUp:
+			pos_mail_y--
+			ret = true
+		case tcell.KeyDown:
+			pos_mail_y++
+			ret = true
+		}
 	}
 	return
 }

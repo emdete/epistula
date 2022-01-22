@@ -14,7 +14,7 @@ import (
 type ThreadDisplay struct {
 }
 
-func ThreadDisplayFeed(s tcell.Screen, ev *tcell.EventKey) (ret bool) {
+func ThreadDisplayEventHandler(s tcell.Screen, ev tcell.Event) (ret bool) {
 	ret = false
 	return
 }

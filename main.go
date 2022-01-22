@@ -11,7 +11,7 @@ import (
 
 var pos_vertical_bar = 60
 var status Status
-var queryEdit QueryEdit
+var query Query
 var frames Frames
 
 func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int) {
@@ -42,7 +42,7 @@ func updateScreen(s tcell.Screen) {
 	s.Clear()
 	frames.Draw(s, 0, 0, w, h)
 	status.Draw(s, 0, 0, w, 1)
-	queryEdit.Draw(s, 0, 1, w, 1)
+	query.Draw(s, 0, 1, w, 1)
 	// TODO:
 	style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#ee9900")).Bold(true)
 	if pos_mail_y <= 3 {
@@ -72,12 +72,12 @@ func _log() {
 func main() {
 	// log
 	_log()
-	// Status
-	status = NewStatus()
 	// Frames
 	frames = NewFrames(pos_vertical_bar)
+	// Status
+	status = NewStatus()
 	// Query
-	queryEdit = NewQueryEdit()
+	query = NewQuery()
 	// notmuch
 	_notmuch()
 	// gpgme
@@ -98,24 +98,25 @@ func main() {
 		s.EnablePaste()
 		updateScreen(s)
 		for {
-			switch ev := s.PollEvent().(type) {
+			event := s.PollEvent()
+			switch ev := event.(type) {
 			case *tcell.EventKey:
 				switch ev.Key() {
 				// queryedit //
 				case tcell.KeyRune, tcell.KeyLeft, tcell.KeyRight,
 				tcell.KeyBackspace, tcell.KeyBackspace2, tcell.KeyEnter,
 				tcell.KeyDelete, tcell.KeyHome, tcell.KeyEnd, tcell.KeyTab:
-					if queryEdit.Feed(s, ev) {
+					if query.EventHandler(s, event) {
 						updateScreen(s)
 					}
 				// enumeration //
 				case tcell.KeyUp, tcell.KeyDown:
-					if EnumerationFeed(s, ev) {
+					if EnumerationEventHandler(s, event) {
 						updateScreen(s)
 					}
 					// threaddisplay
 				case tcell.KeyPgUp, tcell.KeyPgDn:
-					if ThreadDisplayFeed(s, ev) {
+					if ThreadDisplayEventHandler(s, event) {
 						updateScreen(s)
 					}
 					//
@@ -130,7 +131,9 @@ func main() {
 				s.Sync()
 				updateScreen(s)
 			case *tcell.EventPaste:
-				_ = ev.Start()
+				if query.EventHandler(s, event) {
+					updateScreen(s)
+				}
 			case *tcell.EventMouse:
 				x, y := ev.Position()
 				button := ev.Buttons()
