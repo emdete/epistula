@@ -15,18 +15,18 @@ func NewFrames(s tcell.Screen, pos_vertical_bar int) (ret Frames) {
 	ret = Frames{
 		pos_vertical_bar,
 	}
-	//s.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack).Background(tcell.GetColor("#000000")).Foreground(tcell.ColorWhite))
+	s.SetStyle(tcell.StyleDefault) //.Background(tcell.ColorBlack).Background(tcell.GetColor("#000000")).Foreground(tcell.ColorWhite))
 	return
 }
 
 func (this *Frames) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	this.pos_vertical_bar = w / 3
 	for x:=0;x<w;x++ {
-		s.SetContent(x, 2, tcell.RuneHLine, nil, tcell.StyleDefault)
+		s.SetCell(x, 2, tcell.StyleDefault, tcell.RuneHLine)
 	}
-	s.SetContent(this.pos_vertical_bar, 2, tcell.RuneTTee, nil, tcell.StyleDefault)
+	s.SetCell(this.pos_vertical_bar, 2, tcell.StyleDefault, tcell.RuneTTee)
 	for y:=3;y<h;y++ {
-		s.SetContent(this.pos_vertical_bar, y, tcell.RuneVLine, nil, tcell.StyleDefault)
+		s.SetCell(this.pos_vertical_bar, y, tcell.StyleDefault, tcell.RuneVLine)
 	}
 	return true
 }
