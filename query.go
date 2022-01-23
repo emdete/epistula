@@ -94,13 +94,15 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 		case tcell.KeyEnd:
 			this.pos_cur = len(this.query)
 			ret = true
-		case tcell.KeyTab:
-			// autocompletion
 		case tcell.KeyEnter:
 			this.notify(s)
+		case tcell.KeyTab:
+			this.pos_cur = len(QUERY_DEFAULT) + len(QUERY_SUFFIX)
+			this.query = QUERY_DEFAULT + QUERY_SUFFIX
+			ret = true
 		}
-		case *tcell.EventPaste:
-			this.pasting = ev.Start()
+	case *tcell.EventPaste:
+		this.pasting = ev.Start()
 	}
 	return
 }

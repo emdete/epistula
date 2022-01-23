@@ -25,27 +25,24 @@ func NewThreads(s tcell.Screen) (this Threads) {
 }
 
 func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	// RuneTTee     = '┬'
-	// RuneRTee     = '┤'
-	// RuneLTee     = '├'
 	// RuneBTee     = '┴'
+	// RuneHLine    = '─'
+	// RuneLLCorner = '└'
+	// RuneLRCorner = '┘'
+	// RuneLTee     = '├'
+	// RuneRTee     = '┤'
+	// RuneTTee     = '┬'
 	// RuneULCorner = '┌'
 	// RuneURCorner = '┐'
 	// RuneVLine    = '│'
-	// RuneLLCorner = '└'
-	// RuneLRCorner = '┘'
 	cs := tcell.StyleDefault.Reverse(true)
-	emitStr(s, px, py, cs, " Newsletter KW 4/2022", w)
-	for row := 1; row < h-4; row++ {
-		col := 0
-		//for col := 0; col < w; col++ {
+	emitStr(s, px+1, py+1, cs, " Newsletter KW 4/2022", w)
+	col := 1
+	//for col := 0; col < w; col++ {
+		for row := 2; row < h-4; row++ {
 			s.SetCell(px+col, py+row, tcell.StyleDefault, tcell.RuneVLine)
-		//}
-	}
-	s.SetCell(px+0, py+h-4, tcell.StyleDefault, tcell.RuneLLCorner)
-	//s.SetContent(px, py, tcell.RuneHLine, nil, tcell.StyleDefault)
-	//s.SetContent(px, py, tcell.RuneTTee, nil, tcell.StyleDefault)
-	//s.SetContent(px, py, tcell.RuneVLine, nil, tcell.StyleDefault)
+		}
+	//}
 	return true
 }
 
