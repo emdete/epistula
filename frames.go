@@ -15,10 +15,12 @@ func NewFrames(s tcell.Screen, pos_vertical_bar int) (ret Frames) {
 	ret = Frames{
 		pos_vertical_bar,
 	}
+	//s.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack).Background(tcell.GetColor("#000000")).Foreground(tcell.ColorWhite))
 	return
 }
 
 func (this *Frames) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
+	this.pos_vertical_bar = w / 3
 	for x:=0;x<w;x++ {
 		s.SetContent(x, 2, tcell.RuneHLine, nil, tcell.StyleDefault)
 	}
@@ -31,6 +33,12 @@ func (this *Frames) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 
 func (this *Frames) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
+	switch ev := event.(type) {
+	case *tcell.EventResize:
+		log.Printf("event=%v", ev)
+		s.Sync()
+		ret = true
+	}
 	return
 }
 

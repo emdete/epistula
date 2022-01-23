@@ -27,7 +27,7 @@ func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int)
 			}
 			s.SetContent(x, y, c, comb, style)
 			x += w
-			width--
+			width -= w
 		}
 	}
 	for width > 0 {
@@ -44,7 +44,7 @@ func updateScreen(s tcell.Screen) {
 	frames.Draw(s, 0, 0, w, h)
 	status.Draw(s, 0, 0, w, 1)
 	query.Draw(s, 0, 1, w, 1)
-	enumeration.Draw(s, 0, 3, frames.pos_vertical_bar-1, h-3)
+	enumeration.Draw(s, 0, 3, frames.pos_vertical_bar, h-3)
 	s.Show()
 	//s.Sync()
 }
@@ -69,7 +69,6 @@ func main() {
 		if err := s.Init(); err != nil {
 			panic(err)
 		}
-		s.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite))
 		s.EnableMouse()
 		s.EnablePaste()
 		// Frames
@@ -80,8 +79,9 @@ func main() {
 		query = NewQuery(s)
 		// Enumeration
 		enumeration = NewEnumeration(s)
+		running := true
 		update := true
-		for {
+		for running {
 			if update {
 				updateScreen(s)
 				update = false
@@ -99,14 +99,12 @@ func main() {
 				case tcell.KeyPgUp, tcell.KeyPgDn:
 					update = update || threads.EventHandler(s, event)
 				case tcell.KeyEscape:
-					s.Fini()
-					os.Exit(0)
+					running = false
 				case tcell.KeyCtrlB:
 					s.Beep()
 				}
 			case *tcell.EventResize:
-				s.Sync()
-				update = true
+				update = update || frames.EventHandler(s, event)
 			case *tcell.EventPaste:
 				update = update || query.EventHandler(s, event)
 			case *tcell.EventMouse:

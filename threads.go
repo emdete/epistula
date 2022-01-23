@@ -14,7 +14,7 @@ type Enumeration struct {
 	threads *notmuch.Threads
 	filtered_t int
 	mailthreads [100](*ThreadEntry)
-	pos_mail int
+	selected_index int
 }
 
 func NewEnumeration(s tcell.Screen) (this Enumeration) {
@@ -41,23 +41,28 @@ func (this *Enumeration) Close() {
 }
 
 func (this *Enumeration) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#ee9900")).Bold(true)
-	if this.pos_mail >= h {
-		this.pos_mail = h-1
+	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#ee9900"))
+	if this.selected_index >= h {
+		this.selected_index = h-1
 	}
 	for i, thread := range this.mailthreads {
 		log.Printf("%d: %v", i, thread)
-		var cs tcell.Style
-		if i == this.pos_mail {
-			cs = style
+		var cs1, cs2 tcell.Style
+		if i == this.selected_index {
+			cs1 = selected_style.Bold(true)
+			cs2 = cs1.Bold(false)
 		} else {
-			cs = tcell.StyleDefault
+			cs1 = tcell.StyleDefault.Bold(true)
+			cs2 = cs1.Bold(false).Foreground(tcell.GetColor("#999999"))
 		}
 		if thread != nil {
-			emitStr(s, px, py+i, cs, thread.subject, frames.pos_vertical_bar)
-			log.Printf("%d: s=%v", i, thread.subject)
+			emitStr(s, px, py+i*2, cs1, thread.author, w)
+			emitStr(s, px, py+i*2+1, cs2, thread.subject, w)
+			//emitStr(s, px, py+i*3+2, tcell.StyleDefault, "", w)
 		} else {
-			emitStr(s, px, py+i, cs, "           ", frames.pos_vertical_bar)
+			emitStr(s, px, py+i*2, tcell.StyleDefault, "", w)
+			emitStr(s, px, py+i*2+1, tcell.StyleDefault, "", w)
+			//emitStr(s, px, py+i*3+2, tcell.StyleDefault, "", w)
 		}
 		i++
 	}
@@ -70,13 +75,13 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 	case *tcell.EventKey:
 		switch ev.Key() {
 		case tcell.KeyUp:
-			if this.pos_mail > 0 {
-				this.pos_mail--
+			if this.selected_index > 0 {
+				this.selected_index--
 				ret = true
 			}
 		case tcell.KeyDown:
-			if this.pos_mail+1 < this.filtered_t {
-				this.pos_mail++
+			if this.selected_index+1 < this.filtered_t {
+				this.selected_index++
 				ret = true
 			}
 		}
@@ -84,7 +89,7 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 		x, y := ev.Position()
 		button := ev.Buttons()
 		if button != tcell.ButtonNone && x < frames.pos_vertical_bar && y >= 3 {
-			this.pos_mail = y - 3 // TODO offset
+			this.selected_index = y - 3 // TODO offset
 		}
 		ret = true
 	case *EventQuery:
@@ -106,34 +111,37 @@ func (this *Enumeration) do_query(s tcell.Screen, query string) {
 	this.filtered_t = nmq.CountThreads()
 	log.Printf("filtered_t=%d", this.filtered_t)
 	filtered_m := nmq.CountMessages()
-	if threads, err := nmq.Threads(); err != nil {
-		panic(err)
-	} else {
-		this.threads = threads
-	}
 	count := 0
-	var thread *notmuch.Thread
-	for this.threads.Next(&thread) {
-		defer thread.Close()
-		log.Printf("%d: %v", count, thread.Subject())
-		this.mailthreads[count] = newThreadEntry(thread)
-		if count >= this.filtered_t {
-			panic("more threads than reported")
+	if threads, err := nmq.Threads(); err == nil {
+		this.threads = threads
+		var thread *notmuch.Thread
+		for this.threads.Next(&thread) {
+			defer thread.Close()
+			log.Printf("%d: %v", count, thread.Subject())
+			this.mailthreads[count] = newThreadEntry(thread)
+			if count >= this.filtered_t { // assertion
+				panic("more threads than reported")
+			}
+			count++
+			if count >= len(this.mailthreads) {
+				break
+			}
 		}
-		count++
-		if count > 50 {
-			break
+		if count < this.filtered_t && count != len(this.mailthreads) { // assertion
+			panic("less threads than reported")
 		}
-	}
-	if count < this.filtered_t {
-		panic("less threads than reported")
+		if this.selected_index < 0 {
+			// after empty results move the selection into the result
+			this.selected_index = 0
+		}
 	}
 	for count<len(this.mailthreads) {
 		this.mailthreads[count] = nil
 		count++
 	}
-	if this.pos_mail >= this.filtered_t {
-		this.pos_mail = this.filtered_t-1
+	if this.selected_index >= this.filtered_t {
+		this.selected_index = this.filtered_t-1
+		// -1 being valid for empty results
 	}
 	st := this.db.NewQuery("*")
 	overall_t := 0 // too expensive: st.CountThreads()
@@ -181,11 +189,17 @@ type ThreadEntry struct {
 }
 
 func newThreadEntry(thread *notmuch.Thread) (*ThreadEntry) {
-	// matched, unmatched := thread.Authors()
+	author := "-"
+	matched, unmatched := thread.Authors()
+	if len(matched) > 0 {
+		author = matched[0]
+	} else if len(unmatched) > 0 {
+		author = unmatched[0]
+	}
 	// log.Printf("matched=%v, unmatched=%v", matched, unmatched)
 	this := ThreadEntry {
 		thread.ID(),
-		"",//matched[0],
+		"🙂 " + author,
 		thread.Subject(),
 	}
 	// thread.Count()
