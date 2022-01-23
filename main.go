@@ -56,15 +56,16 @@ func _log() {
 }
 
 func main() {
-	log.Printf("main")
 	// log
 	_log()
+	log.Printf("main")
 	// tcell
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	encoding.Register()
 	if s, err := tcell.NewScreen(); err != nil {
 		panic(err)
 	} else {
+		defer s.Fini()
 		if err := s.Init(); err != nil {
 			panic(err)
 		}

@@ -9,7 +9,7 @@ import (
 )
 
 
-var QUERY_DEFAULT = "tag:inbox AND NOT tag:spam"
+var QUERY_DEFAULT = "tag:inbox"
 var QUERY_PREFIX = "search "
 var QUERY_SUFFIX = " AND "
 // Query
@@ -95,7 +95,7 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 			this.pos_cur = len(this.query)
 			ret = true
 		case tcell.KeyTab:
-
+			// autocompletion
 		case tcell.KeyEnter:
 			this.notify(s)
 		}
