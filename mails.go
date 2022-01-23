@@ -24,6 +24,10 @@ func NewThreads(s tcell.Screen) (this Threads) {
 	return
 }
 
+func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
+	return true
+}
+
 func (this *Threads) EventHandler(s tcell.Screen, ev tcell.Event) (ret bool) {
 	ret = false
 	return

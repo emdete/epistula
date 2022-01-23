@@ -44,6 +44,7 @@ func updateScreen(s tcell.Screen) {
 	status.Draw(s, 0, 0, w, 1)
 	query.Draw(s, 0, 1, w, 1)
 	enumeration.Draw(s, 0, 3, frames.pos_vertical_bar, h-3)
+	threads.Draw(s, frames.pos_vertical_bar+1, 3, w-frames.pos_vertical_bar-1, h-3)
 	s.Show()
 }
 
@@ -76,6 +77,8 @@ func main() {
 		query = NewQuery(s)
 		// Enumeration
 		enumeration = NewEnumeration(s)
+		// Threads
+		threads = NewThreads(s)
 		running := true
 		update := true
 		for running {
