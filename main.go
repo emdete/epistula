@@ -56,6 +56,7 @@ func _log() {
 }
 
 func main() {
+	log.Printf("main")
 	// log
 	_log()
 	// tcell
@@ -78,52 +79,43 @@ func main() {
 		query = NewQuery(s)
 		// Enumeration
 		enumeration = NewEnumeration(s)
-		updateScreen(s)
+		update := true
 		for {
+			if update {
+				updateScreen(s)
+				update = false
+			}
 			event := s.PollEvent()
 			switch ev := event.(type) {
 			case *tcell.EventKey:
 				switch ev.Key() {
-				// queryedit //
 				case tcell.KeyRune, tcell.KeyLeft, tcell.KeyRight,
 				tcell.KeyBackspace, tcell.KeyBackspace2, tcell.KeyEnter,
 				tcell.KeyDelete, tcell.KeyHome, tcell.KeyEnd, tcell.KeyTab:
-					if query.EventHandler(s, event) {
-						updateScreen(s)
-					}
-				// enumeration //
+					update = update || query.EventHandler(s, event)
 				case tcell.KeyUp, tcell.KeyDown:
-					if enumeration.EventHandler(s, event) {
-						updateScreen(s)
-					}
-					// threaddisplay
+					update = update || enumeration.EventHandler(s, event)
 				case tcell.KeyPgUp, tcell.KeyPgDn:
-					if threads.EventHandler(s, event) {
-						updateScreen(s)
-					}
-					//
+					update = update || threads.EventHandler(s, event)
 				case tcell.KeyEscape:
 					s.Fini()
 					os.Exit(0)
 				case tcell.KeyCtrlB:
 					s.Beep()
-					s.Sync()
 				}
 			case *tcell.EventResize:
 				s.Sync()
-				updateScreen(s)
+				update = true
 			case *tcell.EventPaste:
-				if query.EventHandler(s, event) {
-					updateScreen(s)
-				}
+				update = update || query.EventHandler(s, event)
 			case *tcell.EventMouse:
-				enumeration.EventHandler(s, event)
-			case *EventQuery:
-				update := enumeration.EventHandler(s, event)
+				update = update || enumeration.EventHandler(s, event)
+			case *EventThreadsStatus:
 				update = update || status.EventHandler(s, event)
-				if update {
-					updateScreen(s)
-				}
+			case *EventThreadsMail:
+				update = update || threads.EventHandler(s, event)
+			case *EventQuery:
+				update = update || enumeration.EventHandler(s, event)
 			}
 		}
 	}

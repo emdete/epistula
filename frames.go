@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "log"
+	"log"
 	// +tcell
 	"github.com/gdamore/tcell/v2"
 )
@@ -11,6 +11,7 @@ type Frames struct {
 }
 
 func NewFrames(s tcell.Screen, pos_vertical_bar int) (ret Frames) {
+	log.Printf("NewFrames")
 	ret = Frames{
 		pos_vertical_bar,
 	}
@@ -28,4 +29,8 @@ func (this *Frames) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	return true
 }
 
+func (this *Frames) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
+	ret = false
+	return
+}
 

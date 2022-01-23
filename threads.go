@@ -18,6 +18,7 @@ type Enumeration struct {
 }
 
 func NewEnumeration(s tcell.Screen) (this Enumeration) {
+	log.Printf("NewEnumeration")
 	this = Enumeration{
 	}
 	if user, err := user.Current(); err != nil {
@@ -64,18 +65,20 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 				ret = true
 			}
 		case tcell.KeyDown:
-			this.pos_mail++
-			ret = true
+			if this.pos_mail+1 < len(this.subjects) {
+				this.pos_mail++
+				ret = true
+		}
 		}
 	case *tcell.EventMouse:
 		x, y := ev.Position()
 		button := ev.Buttons()
 		if button != tcell.ButtonNone && x < frames.pos_vertical_bar && y >= 3 {
 			this.pos_mail = y - 3 // TODO offset
-			updateScreen(s)
 		}
+		ret = true
 	case *EventQuery:
-		this.do_query()
+		this.do_query(s)
 	}
 	return
 }
@@ -101,12 +104,14 @@ type EventThreadsStatus struct {
 func (this *Enumeration) notifyStatus(s tcell.Screen) {
 	ev := &EventThreadsStatus{}
 	ev.SetEventNow()
+	ev.overall = 300000
+	ev.filtered = 12
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
 }
 
-func (this *Enumeration) do_query() {
+func (this *Enumeration) do_query(s tcell.Screen) {
 	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
 	{
 		{
@@ -143,5 +148,7 @@ func (this *Enumeration) do_query() {
 			}
 		}
 	}
+	this.notifyStatus(s)
+	this.notifyMail(s)
 }
 

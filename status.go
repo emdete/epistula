@@ -1,20 +1,21 @@
 package main
 
 import (
-	_ "log"
+	"log"
 	"fmt"
 	// +tcell
 	"github.com/gdamore/tcell/v2"
 )
 
-var TEMPLATE = "Mails %d of %d overall"
+var TEMPLATE = "Filtered %d of %d overall mails"
 type Status struct {
 	line string
 }
 
 func NewStatus(s tcell.Screen) (ret Status) {
+	log.Printf("NewStatus")
 	ret = Status{
-		"",
+		fmt.Sprintf(TEMPLATE, 0, 0),
 	}
 	return
 }
@@ -30,6 +31,7 @@ func (this *Status) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	switch ev := event.(type) {
 	case *EventThreadsStatus:
 		this.line = fmt.Sprintf(TEMPLATE, ev.filtered, ev.overall)
+		ret = true
 	}
 	return
 }

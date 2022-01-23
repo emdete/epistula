@@ -1,12 +1,13 @@
 package main
 
 import (
-	_ "log"
+	"log"
 	// +tcell
 	"github.com/gdamore/tcell/v2"
 )
 
 
+var DEFAULT = "tag:inbox AND NOT tag:spam"
 var PREFIX = "search "
 var SUFFIX = " AND "
 // Query
@@ -14,17 +15,15 @@ var SUFFIX = " AND "
 type Query struct {
 	pos_cur int
 	query string
-}
-
-type EventQuery struct {
-	tcell.EventTime
-	query string
+	pasting bool
 }
 
 func NewQuery(s tcell.Screen) (this Query) {
+	log.Printf("NewQuery")
 	this = Query{
-		38,
-		"tag:inbox AND NOT tag:spam",
+		len(DEFAULT) + len(SUFFIX),
+		DEFAULT,
+		false,
 	}
 	this.notify(s)
 	return
@@ -33,8 +32,13 @@ func NewQuery(s tcell.Screen) (this Query) {
 func (this *Query) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	emitStr(s, px, py, tcell.StyleDefault, PREFIX + this.query + SUFFIX, w)
 	// Cursor in query line
-	s.ShowCursor(px+this.pos_cur, py)
+	s.ShowCursor(px+len(PREFIX)+this.pos_cur, py)
 	return true
+}
+
+type EventQuery struct {
+	tcell.EventTime
+	query string
 }
 
 func (this *Query) notify(s tcell.Screen) {
@@ -56,20 +60,20 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 			case 'b':
 			}
 		case tcell.KeyLeft:
-			if this.pos_cur > len(PREFIX) {
+			if this.pos_cur > 0 {
 				this.pos_cur--
+				ret = true
 			}
-			ret = true
 		case tcell.KeyRight:
-			if this.pos_cur < len(PREFIX) + len(this.query) + len(SUFFIX) {
+			if this.pos_cur < len(this.query) + len(SUFFIX) {
 				this.pos_cur++
+				ret = true
 			}
-			ret = true
 		case tcell.KeyEnter:
 			this.notify(s)
 		}
 		case *tcell.EventPaste:
-			_ = ev.Start()
+			this.pasting = ev.Start()
 	}
 	return
 }

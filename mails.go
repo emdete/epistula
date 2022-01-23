@@ -15,6 +15,7 @@ type Threads struct {
 }
 
 func NewThreads(s tcell.Screen) (this Threads) {
+	log.Printf("NewThreads")
 	this = Threads{
 	}
 	// gpgme
