@@ -4,7 +4,7 @@ import (
 	"log"
 	"fmt"
 	"strings"
-	// +tcell
+	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
 )
 

@@ -2,15 +2,14 @@ package main
 
 import (
 	"log"
-	// +tcell
+	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
-	// +pgpme
+	// see 
 	"github.com/proglottis/gpgme"
-	// +gmime3
+	// see 
 	_ "github.com/sendgrid/go-gmime"
 )
-// Threads
-// keys: PgUp PgDn
+
 type Threads struct {
 }
 
