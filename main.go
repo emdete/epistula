@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"os"
-	// +tcell
+	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
 	"github.com/gdamore/tcell/v2/encoding"
 	"github.com/mattn/go-runewidth"
@@ -31,9 +31,8 @@ func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int)
 		}
 	}
 	for width > 0 {
-		var comb []rune
-		s.SetContent(x, y, ' ', comb, style)
-		x += 1
+		s.SetContent(x, y, ' ', nil, style)
+		x++
 		width--
 	}
 }
@@ -46,7 +45,6 @@ func updateScreen(s tcell.Screen) {
 	query.Draw(s, 0, 1, w, 1)
 	enumeration.Draw(s, 0, 3, frames.pos_vertical_bar, h-3)
 	s.Show()
-	//s.Sync()
 }
 
 func _log() {
@@ -60,7 +58,6 @@ func main() {
 	_log()
 	log.Printf("main")
 	// tcell
-	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	encoding.Register()
 	if s, err := tcell.NewScreen(); err != nil {
 		panic(err)

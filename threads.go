@@ -4,16 +4,19 @@ import (
 	"log"
 	"os/user"
 	"path/filepath"
+	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
+	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
 	"github.com/zenhack/go.notmuch"
 )
 
 type Enumeration struct {
-	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
 	db *notmuch.DB
 	threads *notmuch.Threads
 	filtered_t int
 	mailthreads [100](*ThreadEntry)
+	offset int
+	height int
 	selected_index int
 }
 
@@ -41,14 +44,15 @@ func (this *Enumeration) Close() {
 }
 
 func (this *Enumeration) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
+	this.height = h/2
 	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#ee9900"))
 	if this.selected_index >= h {
 		this.selected_index = h-1
 	}
-	for i, thread := range this.mailthreads {
+	for i, thread := range this.mailthreads[this.offset:] {
 		log.Printf("%d: %v", i, thread)
 		var cs1, cs2 tcell.Style
-		if i == this.selected_index {
+		if this.offset + i == this.selected_index {
 			cs1 = selected_style.Bold(true)
 			cs2 = cs1.Bold(false)
 		} else {
@@ -58,11 +62,9 @@ func (this *Enumeration) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 		if thread != nil {
 			emitStr(s, px, py+i*2, cs1, thread.author, w)
 			emitStr(s, px, py+i*2+1, cs2, thread.subject, w)
-			//emitStr(s, px, py+i*3+2, tcell.StyleDefault, "", w)
 		} else {
 			emitStr(s, px, py+i*2, tcell.StyleDefault, "", w)
 			emitStr(s, px, py+i*2+1, tcell.StyleDefault, "", w)
-			//emitStr(s, px, py+i*3+2, tcell.StyleDefault, "", w)
 		}
 		i++
 	}
@@ -77,11 +79,17 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 		case tcell.KeyUp:
 			if this.selected_index > 0 {
 				this.selected_index--
+				if this.selected_index <= this.offset && this.offset > 0 {
+					this.offset--
+				}
 				ret = true
 			}
 		case tcell.KeyDown:
 			if this.selected_index+1 < this.filtered_t {
 				this.selected_index++
+				if this.selected_index-this.offset > this.height-2 {
+					this.offset++
+				}
 				ret = true
 			}
 		}
