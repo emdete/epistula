@@ -2,14 +2,16 @@ package main
 
 import (
 	"log"
+	"fmt"
+	"strings"
 	// +tcell
 	"github.com/gdamore/tcell/v2"
 )
 
 
-var DEFAULT = "tag:inbox AND NOT tag:spam"
-var PREFIX = "search "
-var SUFFIX = " AND "
+var QUERY_DEFAULT = "tag:inbox AND NOT tag:spam"
+var QUERY_PREFIX = "search "
+var QUERY_SUFFIX = " AND "
 // Query
 // keys: Left Right chars enter tab
 type Query struct {
@@ -21,8 +23,8 @@ type Query struct {
 func NewQuery(s tcell.Screen) (this Query) {
 	log.Printf("NewQuery")
 	this = Query{
-		len(DEFAULT) + len(SUFFIX),
-		DEFAULT,
+		len(QUERY_DEFAULT) + len(QUERY_SUFFIX),
+		QUERY_DEFAULT + QUERY_SUFFIX,
 		false,
 	}
 	this.notify(s)
@@ -30,9 +32,9 @@ func NewQuery(s tcell.Screen) (this Query) {
 }
 
 func (this *Query) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	emitStr(s, px, py, tcell.StyleDefault, PREFIX + this.query + SUFFIX, w)
+	emitStr(s, px, py, tcell.StyleDefault, QUERY_PREFIX + this.query, w)
 	// Cursor in query line
-	s.ShowCursor(px+len(PREFIX)+this.pos_cur, py)
+	s.ShowCursor(px+len(QUERY_PREFIX)+this.pos_cur, py)
 	return true
 }
 
@@ -44,7 +46,12 @@ type EventQuery struct {
 func (this *Query) notify(s tcell.Screen) {
 	ev := &EventQuery{}
 	ev.SetEventNow()
-	ev.query = this.query
+	if strings.HasSuffix(this.query, QUERY_SUFFIX) {
+		// if the user did not change the QUERY_SUFFIX, she doesnt want that considered, cut it
+		ev.query = this.query[:len(this.query)-len(QUERY_SUFFIX)]
+	} else {
+		ev.query = this.query
+	}
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
@@ -56,19 +63,39 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	case *tcell.EventKey:
 		switch ev.Key() {
 		case tcell.KeyRune:
-			switch ev.Rune() {
-			case 'b':
-			}
+			r := ev.Rune()
+			this.query = fmt.Sprintf("%s%c%s", this.query[:this.pos_cur], r, this.query[this.pos_cur:])
+			this.pos_cur++
+			ret = true
 		case tcell.KeyLeft:
 			if this.pos_cur > 0 {
 				this.pos_cur--
 				ret = true
 			}
 		case tcell.KeyRight:
-			if this.pos_cur < len(this.query) + len(SUFFIX) {
+			if this.pos_cur < len(this.query) {
 				this.pos_cur++
 				ret = true
 			}
+		case tcell.KeyBackspace, tcell.KeyBackspace2:
+			if this.pos_cur > 0 {
+				this.pos_cur--
+				this.query = this.query[:this.pos_cur] + this.query[this.pos_cur+1:]
+				ret = true
+			}
+		case tcell.KeyDelete:
+			if this.pos_cur > 0 {
+				this.query = this.query[:this.pos_cur] + this.query[this.pos_cur+1:]
+				ret = true
+			}
+		case tcell.KeyHome:
+			this.pos_cur = 0
+			ret = true
+		case tcell.KeyEnd:
+			this.pos_cur = len(this.query)
+			ret = true
+		case tcell.KeyTab:
+
 		case tcell.KeyEnter:
 			this.notify(s)
 		}

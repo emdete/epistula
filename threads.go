@@ -9,11 +9,13 @@ import (
 	// +notmuch
 	"github.com/zenhack/go.notmuch"
 )
-// List
+// Enumeration
 // KeyUp KeyDown EventQuery
 type Enumeration struct {
+	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
 	db *notmuch.DB
-	subjects []string
+	threads *notmuch.Threads
+	subjects [100]string
 	pos_mail int
 }
 
@@ -32,6 +34,9 @@ func NewEnumeration(s tcell.Screen) (this Enumeration) {
 }
 
 func (this *Enumeration) Close() {
+	if this.threads != nil {
+		this.threads.Close()
+	}
 	if this.db != nil {
 		this.db.Close()
 	}
@@ -78,7 +83,7 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 		}
 		ret = true
 	case *EventQuery:
-		this.do_query(s)
+		this.do_query(s, ev.query)
 	}
 	return
 }
@@ -97,58 +102,71 @@ func (this *Enumeration) notifyMail(s tcell.Screen) {
 
 type EventThreadsStatus struct {
 	tcell.EventTime
-	overall int
-	filtered int
+	overall_t int
+	overall_m int
+	filtered_m int
+	filtered_t int
 }
 
-func (this *Enumeration) notifyStatus(s tcell.Screen) {
+func (this *Enumeration) notifyStatus(s tcell.Screen, overall_t, overall_m, filtered_t, filtered_m int) {
 	ev := &EventThreadsStatus{}
 	ev.SetEventNow()
-	ev.overall = 300000
-	ev.filtered = 12
+	ev.overall_t = overall_t
+	ev.overall_m = overall_m
+	ev.filtered_m = filtered_m
+	ev.filtered_t = filtered_t
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
 }
 
-func (this *Enumeration) do_query(s tcell.Screen) {
-	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
-	{
-		{
-			// this.db.FindMessage(id)
-			// if _, err := this.db.Tags(); err != nil {
-			//
-			if threads, err := this.db.NewQuery("tag:inbox AND NOT tag:spam").Threads(); err != nil {
-				panic(err)
-			} else {
-				defer threads.Close()
-				var thread *notmuch.Thread
-				for threads.Next(&thread) {
-					defer thread.Close()
-					//this.subjects[thread.ID()] = thread.Subject()
-					this.subjects = append(this.subjects, thread.Subject())
-					// matched, unmatched := thread.Authors()
-					// thread.Count()
-					// thread.CountMatched()
-					// thread.OldestDate()
-					// thread.NewestDate()
-					tags := thread.Tags()
-					var tag *notmuch.Tag
-					for tags.Next(&tag) {
-						log.Printf("tag=%s", tag)
-					}
-					// thread.Messages()
-					messages := thread.Messages()
-					var message *notmuch.Message
-					for messages.Next(&message) {
-						defer message.Close()
-						log.Printf("filename=%s", message.Filename())
-					}
-				}
-			}
+func (this *Enumeration) do_query(s tcell.Screen, query string) {
+	//for len(this.subjects) > 0 { delete(this.subjects, 0) }
+	// this.db.FindMessage(id)
+	// this.db.Tags()
+	if this.threads != nil {
+		this.threads.Close()
+	}
+	nmq := this.db.NewQuery(query)
+	filtered_t := nmq.CountThreads()
+	filtered_m := nmq.CountMessages()
+	if threads, err := nmq.Threads(); err != nil {
+		panic(err)
+	} else {
+		this.threads = threads
+	}
+	count := 0
+	var thread *notmuch.Thread
+	for this.threads.Next(&thread) {
+		defer thread.Close()
+		//this.subjects[thread.ID()] = thread.Subject()
+		this.subjects[count] = thread.Subject()
+		// matched, unmatched := thread.Authors()
+		// thread.Count()
+		// thread.CountMatched()
+		// thread.OldestDate()
+		// thread.NewestDate()
+		tags := thread.Tags()
+		var tag *notmuch.Tag
+		for tags.Next(&tag) {
+			log.Printf("tag=%s", tag)
+		}
+		// thread.Messages()
+		messages := thread.Messages()
+		var message *notmuch.Message
+		for messages.Next(&message) {
+			defer message.Close()
+			log.Printf("filename=%s", message.Filename())
+		}
+		count++
+		if count > 50 {
+			break
 		}
 	}
-	this.notifyStatus(s)
+	st := this.db.NewQuery("*")
+	overall_t := 0 // too expensive: st.CountThreads()
+	overall_m := st.CountMessages()
+	this.notifyStatus(s, overall_t, overall_m, filtered_t, filtered_m)
 	this.notifyMail(s)
 }
 

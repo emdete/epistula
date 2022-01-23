@@ -19,9 +19,9 @@ func NewThreads(s tcell.Screen) (this Threads) {
 	this = Threads{
 	}
 	// gpgme
-	_gpgme()
+	this._gpgme()
 	// gmime3
-	_gmime3()
+	this._gmime3()
 	return
 }
 
@@ -30,7 +30,7 @@ func (this *Threads) EventHandler(s tcell.Screen, ev tcell.Event) (ret bool) {
 	return
 }
 
-func _gpgme() {
+func (this *Threads) _gpgme() {
 	// see ~/go/pkg/mod/github.com/proglottis/gpgme@v0.1.1/gpgme.go
 	if context, err := gpgme.New(); err != nil {
 		panic(err)
@@ -55,7 +55,7 @@ func _gpgme() {
 	}
 }
 
-func _gmime3() {
+func (this *Threads) _gmime3() {
 	//_, _ = gmime3.Parse("")
 }
 
