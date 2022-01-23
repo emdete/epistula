@@ -9,7 +9,7 @@ import (
 type Status struct {
 }
 
-func NewStatus() (ret Status) {
+func NewStatus(s tcell.Screen) (ret Status) {
 	ret = Status{
 	}
 	return

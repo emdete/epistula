@@ -9,12 +9,22 @@ import (
 	// +gmime3
 	_ "github.com/sendgrid/go-gmime"
 )
-// ThreadDisplay
+// Threads
 // keys: PgUp PgDn
-type ThreadDisplay struct {
+type Threads struct {
 }
 
-func ThreadDisplayEventHandler(s tcell.Screen, ev tcell.Event) (ret bool) {
+func NewThreads(s tcell.Screen) (this Threads) {
+	this = Threads{
+	}
+	// gpgme
+	_gpgme()
+	// gmime3
+	_gmime3()
+	return
+}
+
+func (this *Threads) EventHandler(s tcell.Screen, ev tcell.Event) (ret bool) {
 	ret = false
 	return
 }

@@ -9,10 +9,11 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
-var pos_vertical_bar = 60
+var frames Frames
 var status Status
 var query Query
-var frames Frames
+var enumeration Enumeration
+var threads Threads
 
 func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int) {
 	for _, c := range str {
@@ -43,22 +44,7 @@ func updateScreen(s tcell.Screen) {
 	frames.Draw(s, 0, 0, w, h)
 	status.Draw(s, 0, 0, w, 1)
 	query.Draw(s, 0, 1, w, 1)
-	// TODO:
-	style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#ee9900")).Bold(true)
-	if pos_mail_y <= 3 {
-		pos_mail_y = 3
-	} else if pos_mail_y >= h {
-		pos_mail_y = h-1
-	}
-	y := 3
-	for _,value := range subjects {
-		cs := tcell.StyleDefault
-		if y == pos_mail_y {
-			cs = style
-		}
-		emitStr(s, 0, y, cs, value, pos_vertical_bar)
-		y++
-	}
+	enumeration.Draw(s, 0, 3, frames.pos_vertical_bar-1, h-3)
 	s.Show()
 	//s.Sync()
 }
@@ -72,18 +58,6 @@ func _log() {
 func main() {
 	// log
 	_log()
-	// Frames
-	frames = NewFrames(pos_vertical_bar)
-	// Status
-	status = NewStatus()
-	// Query
-	query = NewQuery()
-	// notmuch
-	_notmuch()
-	// gpgme
-	_gpgme()
-	// gmime3
-	_gmime3()
 	// tcell
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	encoding.Register()
@@ -96,6 +70,14 @@ func main() {
 		s.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite))
 		s.EnableMouse()
 		s.EnablePaste()
+		// Frames
+		frames = NewFrames(s, 61)
+		// Status
+		status = NewStatus(s)
+		// Query
+		query = NewQuery(s)
+		// Enumeration
+		enumeration = NewEnumeration(s)
 		updateScreen(s)
 		for {
 			event := s.PollEvent()
@@ -111,12 +93,12 @@ func main() {
 					}
 				// enumeration //
 				case tcell.KeyUp, tcell.KeyDown:
-					if EnumerationEventHandler(s, event) {
+					if enumeration.EventHandler(s, event) {
 						updateScreen(s)
 					}
 					// threaddisplay
 				case tcell.KeyPgUp, tcell.KeyPgDn:
-					if ThreadDisplayEventHandler(s, event) {
+					if threads.EventHandler(s, event) {
 						updateScreen(s)
 					}
 					//
@@ -135,10 +117,9 @@ func main() {
 					updateScreen(s)
 				}
 			case *tcell.EventMouse:
-				x, y := ev.Position()
-				button := ev.Buttons()
-				if button != tcell.ButtonNone && x < pos_vertical_bar && y >= 3 {
-					pos_mail_y = y
+				enumeration.EventHandler(s, event)
+			case *EventQuery:
+				if enumeration.EventHandler(s, event) {
 					updateScreen(s)
 				}
 			}

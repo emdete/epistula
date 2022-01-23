@@ -10,7 +10,7 @@ type Frames struct {
 	pos_vertical_bar int
 }
 
-func NewFrames(pos_vertical_bar int) (ret Frames) {
+func NewFrames(s tcell.Screen, pos_vertical_bar int) (ret Frames) {
 	ret = Frames{
 		pos_vertical_bar,
 	}
