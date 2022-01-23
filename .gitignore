@@ -1,3 +1,4 @@
 Makefile
 goui
 .*.sw?
+*.dis
