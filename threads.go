@@ -102,9 +102,19 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 	case *tcell.EventKey:
 		switch ev.Key() {
 		case tcell.KeyDown:
-			ret = this.doDown(true)
+			if ev.Modifiers() & tcell.ModCtrl != 0 {
+
+			} else {
+				ret = this.doDown(true)
+			}
 		case tcell.KeyUp:
-			ret = this.doDown(false)
+			if ev.Modifiers() & tcell.ModCtrl != 0 {
+				this.selected_index = 0
+				this.offset = 0
+				ret = true
+			} else {
+				ret = this.doDown(false)
+			}
 		}
 	case *tcell.EventMouse:
 		button := ev.Buttons()
