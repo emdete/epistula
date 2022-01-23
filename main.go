@@ -105,7 +105,10 @@ func main() {
 			case *tcell.EventPaste:
 				update = update || query.EventHandler(s, event)
 			case *tcell.EventMouse:
-				update = update || enumeration.EventHandler(s, event)
+				update = update ||
+					enumeration.EventHandler(s, event) ||
+					threads.EventHandler(s, event) ||
+					query.EventHandler(s, event)
 			case *EventThreadsStatus:
 				update = update || status.EventHandler(s, event)
 			case *EventThreadsMail:

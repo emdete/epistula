@@ -16,7 +16,10 @@ type Enumeration struct {
 	filtered_t int
 	mailthreads [100](*ThreadEntry)
 	offset int
-	height int
+	area_height int
+	area_width int
+	area_px int
+	area_py int
 	selected_index int
 }
 
@@ -44,7 +47,10 @@ func (this *Enumeration) Close() {
 }
 
 func (this *Enumeration) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	this.height = h/2
+	this.area_height = h
+	this.area_width = w
+	this.area_px = px
+	this.area_py = py
 	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#ee9900"))
 	if this.selected_index >= h {
 		this.selected_index = h-1
@@ -71,35 +77,53 @@ func (this *Enumeration) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	return true
 }
 
+func (this *Enumeration) doDown(down bool) bool {
+	if down {
+		if this.selected_index+1 < this.filtered_t {
+			this.selected_index++
+			if this.selected_index-this.offset > this.area_height/2-2 {
+				this.offset++
+			}
+		}
+	} else {
+		if this.selected_index > 0 {
+			this.selected_index--
+			if this.selected_index <= this.offset && this.offset > 0 {
+				this.offset--
+			}
+		}
+	}
+	return true
+}
+
 func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
 	switch ev := event.(type) {
 	case *tcell.EventKey:
 		switch ev.Key() {
-		case tcell.KeyUp:
-			if this.selected_index > 0 {
-				this.selected_index--
-				if this.selected_index <= this.offset && this.offset > 0 {
-					this.offset--
-				}
-				ret = true
-			}
 		case tcell.KeyDown:
-			if this.selected_index+1 < this.filtered_t {
-				this.selected_index++
-				if this.selected_index-this.offset > this.height-2 {
-					this.offset++
-				}
-				ret = true
-			}
+			ret = this.doDown(true)
+		case tcell.KeyUp:
+			ret = this.doDown(false)
 		}
 	case *tcell.EventMouse:
-		x, y := ev.Position()
 		button := ev.Buttons()
-		if button != tcell.ButtonNone && x < frames.pos_vertical_bar && y >= 3 {
-			this.selected_index = y - 3 // TODO offset
+		x, y := ev.Position()
+		if x >= this.area_px && y >= this.area_py {
+			x -= this.area_px
+			y -= this.area_py
+			if x < this.area_width && y < this.area_height {
+				switch button {
+				case tcell.Button1:
+					this.selected_index = y / 2 + this.offset
+					ret = true
+				case tcell.WheelUp:
+					ret = this.doDown(false)
+				case tcell.WheelDown:
+					ret = this.doDown(true)
+				}
+			}
 		}
-		ret = true
 	case *EventQuery:
 		this.do_query(s, ev.query)
 	}
