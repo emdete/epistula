@@ -119,7 +119,9 @@ func main() {
 			case *tcell.EventMouse:
 				enumeration.EventHandler(s, event)
 			case *EventQuery:
-				if enumeration.EventHandler(s, event) {
+				update := enumeration.EventHandler(s, event)
+				update = update || status.EventHandler(s, event)
+				if update {
 					updateScreen(s)
 				}
 			}

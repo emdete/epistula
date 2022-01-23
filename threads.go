@@ -80,6 +80,32 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 	return
 }
 
+type EventThreadsMail struct {
+	tcell.EventTime
+}
+
+func (this *Enumeration) notifyMail(s tcell.Screen) {
+	ev := &EventThreadsMail{}
+	ev.SetEventNow()
+	if err := s.PostEvent(ev); err != nil {
+		panic(err)
+	}
+}
+
+type EventThreadsStatus struct {
+	tcell.EventTime
+	overall int
+	filtered int
+}
+
+func (this *Enumeration) notifyStatus(s tcell.Screen) {
+	ev := &EventThreadsStatus{}
+	ev.SetEventNow()
+	if err := s.PostEvent(ev); err != nil {
+		panic(err)
+	}
+}
+
 func (this *Enumeration) do_query() {
 	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
 	{
