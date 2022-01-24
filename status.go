@@ -31,6 +31,7 @@ func (this *Status) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 
 func (this *Status) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
+	log.Printf("Status.EventHandler %v", event)
 	switch ev := event.(type) {
 	case *EventThreadsStatus:
 		this.line = fmt.Sprintf(STATUS_TEMPLATE, ev.filtered_m, ev.filtered_t, ev.overall_m)

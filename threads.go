@@ -102,8 +102,8 @@ func (this *Threads) doDown(down bool) bool {
 
 func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
+	log.Printf("Threads.EventHandler %v", event)
 	old_index := this.selected_index
-	log.Printf("EventHandler")
 	switch ev := event.(type) {
 	case *tcell.EventKey:
 		switch ev.Key() {

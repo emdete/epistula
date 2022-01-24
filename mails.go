@@ -20,39 +20,87 @@ type Mails struct {
 func NewMails(s tcell.Screen) (this Mails) {
 	log.Printf("NewMails")
 	this = Mails{}
-	// gpgme
-	this._gpgme()
-	// gmime3
-	this._gmime3()
 	return
 }
 
-func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	// RuneULCorner = '┌' // RuneTTee  = '┬' // RuneURCorner = '┐'
-	// RuneLTee     = '├' // RuneHLine = '─' // RuneRTee     = '┤'
-	// RuneLLCorner = '└' // RuneBTee  = '┴' // RuneLRCorner = '┘'
-	// RuneVLine =    '│' 
-	cs1 := tcell.StyleDefault.Foreground(tcell.GetColor("#11aa11"))
-	//selected_style := tcell.StyleDefault.Foreground(tcell).Background(tcell.GetColor("#ee9900"))
-	cs := cs1.Reverse(true)
-	emitStr(s, px, py, cs, " " + this.subject, w)
-	for row := 1; row < 24; row++ {
-		s.SetCell(px, py+row, cs1, tcell.RuneVLine)
+// RuneULCorner = '┌' // RuneTTee  = '┬' // RuneURCorner = '┐'
+// RuneLTee     = '├' // RuneHLine = '─' // RuneRTee     = '┤'
+// RuneLLCorner = '└' // RuneBTee  = '┴' // RuneLRCorner = '┘'
+// RuneVLine =    '│' 
+
+func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, message *notmuch.Message) int {
+	cs1 := tcell.StyleDefault.Background(tcell.ColorLightGray)
+	isencrypted := false
+	tags := message.Tags()
+	var tag *notmuch.Tag
+	for tags.Next(&tag) {
+		if tag.Value == "encrypted" {
+			isencrypted = true
+		}
 	}
-	emitStr(s, px+1, py+1, cs1.Bold(true), "From: " + this.author, w)
-	//emitStr(s, px+1, py+1, cs1, this.newest, w)
-	s.SetCell(px, py+24, cs1, tcell.RuneLLCorner)
-	emitStr(s, px+1, py+24, cs, " " + this.subject, w)
+	if isencrypted {
+		cs1 = cs1.Foreground(tcell.ColorDarkGreen)
+	} else {
+		cs1 = cs1.Foreground(tcell.ColorDarkRed)
+	}
+	cs2 := cs1.Reverse(true)
+	cs3 := tcell.StyleDefault.Foreground(tcell.ColorLightGray)
+	y := 0
+	emitStr(s, px, py+y, cs2, " " + message.Header("Subject"), w)
+	y++
+	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
+	emitStr(s, px+1, py+y, cs1, message.Date().String(), w)
+	y++
+	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
+	emitStr(s, px+1, py+y, cs1, "From: " + message.Header("From"), w)
+	y++
+	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
+	emitStr(s, px+1, py+y, cs1, "To: " + message.Header("To"), w)
+	y++
+	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
+	emitStr(s, px+1, py+y, cs1, "CC: " + message.Header("CC"), w)
+	y++
+	s.SetCell(px, py+y, cs3, tcell.RuneLLCorner)
+	y++
+	return y
+}
+
+func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
+	if this.id == "" {
+		return true
+	}
+	log.Printf("Mails.Draw '%v'", this.id)
+	query := NotMuchDataBase.NewQuery(this.id)
+	defer query.Close()
+	if 1 != query.CountThreads() {
+		return
+	}
+	if threads, err := query.Threads(); err != nil {
+		return
+	} else {
+		var thread *notmuch.Thread
+		for threads.Next(&thread) {
+			defer thread.Close()
+			message := &notmuch.Message{}
+			messages := thread.Messages()
+			for messages.Next(&message) {
+				defer message.Close()
+				py += this.drawMessage(s, px, py, w, h, message)
+				py--
+				px++
+			}
+		}
+	}
 	return true
 }
 
 func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
+	log.Printf("Mails.EventHandler %v", event)
 	switch ev := event.(type) {
 	case *EventThreadsThread:
-		log.Printf("EventThreadsThread ev=%v", ev)
-		iterate(NotMuchDataBase, ev.id)
 		this.ThreadEntry = ev.ThreadEntry
+		//retrieveMail(NotMuchDataBase, this.id)
 		ret = true
 	}
 	return
@@ -87,15 +135,15 @@ func (this *Mails) _gmime3() {
 	//_, _ = gmime3.Parse("")
 }
 
-// iterate over the mails of a thread
-func iterate(db *notmuch.DB, id string) {
-	log.Printf("-- BEGIN iterate %s", id)
-	nmq := db.NewQuery(id)
-	defer nmq.Close()
-	if 1 != nmq.CountThreads() {
+// retrieveMail over the mails of a thread
+func retrieveMail(db *notmuch.DB, id string) {
+	log.Printf("-- [ retrieveMail %s", id)
+	query := db.NewQuery(id)
+	defer query.Close()
+	if 1 != query.CountThreads() {
 		panic("thread not found")
 	}
-	if threads, err := nmq.Threads(); err != nil {
+	if threads, err := query.Threads(); err != nil {
 		panic(err)
 	} else {
 		var thread *notmuch.Thread
@@ -104,12 +152,12 @@ func iterate(db *notmuch.DB, id string) {
 			recurse(thread.Messages())
 		}
 	}
-	log.Printf("-- END iterate")
+	log.Printf("-- ] retrieveMail")
 }
 
 // recurse through the mails of a thread
 func recurse(messages *notmuch.Messages) {
-	log.Printf("-- BEGIN recurse")
+	log.Printf("-- [ recurse")
 	message := &notmuch.Message{}
 	for messages.Next(&message) {
 		defer message.Close()
@@ -136,11 +184,12 @@ func recurse(messages *notmuch.Messages) {
 			//recurse(replies)
 		}
 	}
-	log.Printf("-- END recurse")
+	log.Printf("-- ] recurse")
 }
 
 // descrypt the mails of a thread
 func decr(filename string) {
+	log.Printf("-- [ decr")
 	if stream, err := os.Open(filename); err != nil {
 		panic(err)
 	} else {
@@ -156,5 +205,6 @@ func decr(filename string) {
 			}
 		}
 	}
+	log.Printf("-- ] decr")
 }
 

@@ -42,6 +42,7 @@ func (this *Query) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 
 func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
+	log.Printf("Query.EventHandler %v", event)
 	switch ev := event.(type) {
 	case *tcell.EventKey:
 		switch ev.Key() {
