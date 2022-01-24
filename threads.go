@@ -56,9 +56,6 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	this.area_px = px
 	this.area_py = py
 	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#cc7711"))
-	if this.selected_index >= h {
-		this.selected_index = h - 1
-	}
 	for i, threadEntry := range this.threadEntries[this.offset:] {
 		//log.Printf("%d: %v", i, threadEntry)
 		var cs1, cs2 tcell.Style
@@ -181,25 +178,24 @@ func (this *Threads) do_query(s tcell.Screen, query string) {
 				}
 				count++
 				if count >= len(this.threadEntries) {
+					this.filtered_t = len(this.threadEntries)
 					break
 				}
 			}
 			if count < this.filtered_t && count != len(this.threadEntries) { // assertion
 				panic("less threads than reported")
 			}
-			if this.selected_index < 0 {
-				// after empty results move the selection into the result
-				this.selected_index = 0
-			}
 		}
 		for count < len(this.threadEntries) {
 			this.threadEntries[count] = nil
 			count++
 		}
-		if this.selected_index >= this.filtered_t {
-			this.selected_index = this.filtered_t - 1
-			// -1 being valid for empty results
+		if this.filtered_t <= 0 {
+			this.selected_index = -1 // -1 being valid for empty results
+		} else {
+			this.selected_index = 0
 		}
+		this.offset = 0
 		st := this.db.NewQuery("*")
 		overall_t := 0 // too expensive: st.CountThreads()
 		overall_m := st.CountMessages()

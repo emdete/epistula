@@ -57,9 +57,11 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, message *notmuc
 	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
 	emitStr(s, px+1, py+y, cs1, "To: " + message.Header("To"), w)
 	y++
-	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-	emitStr(s, px+1, py+y, cs1, "CC: " + message.Header("CC"), w)
-	y++
+	if message.Header("CC") != "" {
+		s.SetCell(px, py+y, cs3, tcell.RuneVLine)
+		emitStr(s, px+1, py+y, cs1, "CC: " + message.Header("CC"), w)
+		y++
+	}
 	s.SetCell(px, py+y, cs3, tcell.RuneLLCorner)
 	y++
 	return y
