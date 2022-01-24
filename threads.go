@@ -98,6 +98,7 @@ func (this *Enumeration) doDown(down bool) bool {
 
 func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
+	pos_old := this.selected_index
 	switch ev := event.(type) {
 	case *tcell.EventKey:
 		switch ev.Key() {
@@ -136,6 +137,9 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 		}
 	case *EventQuery:
 		this.do_query(s, ev.query)
+	}
+	if pos_old != this.selected_index {
+		this.notifyThreadsThread(s)
 	}
 	return
 }
@@ -188,16 +192,15 @@ func (this *Enumeration) do_query(s tcell.Screen, query string) {
 	st := this.db.NewQuery("*")
 	overall_t := 0 // too expensive: st.CountThreads()
 	overall_m := st.CountMessages()
-	this.notifyStatus(s, overall_t, overall_m, this.filtered_t, filtered_m)
-	this.notifyMail(s)
+	this.notifyThreadsStatus(s, overall_t, overall_m, this.filtered_t, filtered_m)
 }
 
-type EventThreadsMail struct {
+type EventThreadsThread struct {
 	tcell.EventTime
 }
 
-func (this *Enumeration) notifyMail(s tcell.Screen) {
-	ev := &EventThreadsMail{}
+func (this *Enumeration) notifyThreadsThread(s tcell.Screen) {
+	ev := &EventThreadsThread{}
 	ev.SetEventNow()
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
@@ -212,7 +215,7 @@ type EventThreadsStatus struct {
 	filtered_t int
 }
 
-func (this *Enumeration) notifyStatus(s tcell.Screen, overall_t, overall_m, filtered_t, filtered_m int) {
+func (this *Enumeration) notifyThreadsStatus(s tcell.Screen, overall_t, overall_m, filtered_t, filtered_m int) {
 	ev := &EventThreadsStatus{}
 	ev.SetEventNow()
 	ev.overall_t = overall_t

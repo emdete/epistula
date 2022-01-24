@@ -12,8 +12,8 @@ import (
 var frames Frames
 var status Status
 var query Query
-var enumeration Enumeration
-var threads Threads
+var threads Enumeration
+var mails Mails
 
 func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int) {
 	for _, c := range str {
@@ -45,8 +45,8 @@ func updateScreen(s tcell.Screen) {
 	frames.Draw(s, 0, 0, w, h)
 	status.Draw(s, 0, 0, w, 1)
 	query.Draw(s, 0, 1, w, 1)
-	enumeration.Draw(s, 0, 3, frames.pos_vertical_bar, h-3)
-	threads.Draw(s, frames.pos_vertical_bar+1, 3, w-frames.pos_vertical_bar-1, h-3)
+	threads.Draw(s, 0, 3, frames.pos_vertical_bar, h-3)
+	mails.Draw(s, frames.pos_vertical_bar+1, 3, w-frames.pos_vertical_bar-1, h-3)
 	s.Show()
 }
 
@@ -78,9 +78,9 @@ func main() {
 		// Query
 		query = NewQuery(s)
 		// Enumeration
-		enumeration = NewEnumeration(s)
-		// Threads
-		threads = NewThreads(s)
+		threads = NewEnumeration(s)
+		// Mails
+		mails = NewMails(s)
 		//
 		running := true
 		update := true
@@ -98,9 +98,9 @@ func main() {
 					tcell.KeyDelete, tcell.KeyHome, tcell.KeyEnd, tcell.KeyTab:
 					update = update || query.EventHandler(s, event)
 				case tcell.KeyUp, tcell.KeyDown:
-					update = update || enumeration.EventHandler(s, event)
-				case tcell.KeyPgUp, tcell.KeyPgDn:
 					update = update || threads.EventHandler(s, event)
+				case tcell.KeyPgUp, tcell.KeyPgDn:
+					update = update || mails.EventHandler(s, event)
 				case tcell.KeyEscape:
 					running = false
 				case tcell.KeyCtrlB:
@@ -112,15 +112,15 @@ func main() {
 				update = update || query.EventHandler(s, event)
 			case *tcell.EventMouse:
 				update = update ||
-					enumeration.EventHandler(s, event) ||
 					threads.EventHandler(s, event) ||
+					mails.EventHandler(s, event) ||
 					query.EventHandler(s, event)
 			case *EventThreadsStatus:
 				update = update || status.EventHandler(s, event)
-			case *EventThreadsMail:
-				update = update || threads.EventHandler(s, event)
+			case *EventThreadsThread:
+				update = update || mails.EventHandler(s, event)
 			case *EventQuery:
-				update = update || enumeration.EventHandler(s, event)
+				update = update || threads.EventHandler(s, event)
 			}
 		}
 	}

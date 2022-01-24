@@ -10,12 +10,12 @@ import (
 	_ "github.com/sendgrid/go-gmime"
 )
 
-type Threads struct {
+type Mails struct {
 }
 
-func NewThreads(s tcell.Screen) (this Threads) {
-	log.Printf("NewThreads")
-	this = Threads{}
+func NewMails(s tcell.Screen) (this Mails) {
+	log.Printf("NewMails")
+	this = Mails{}
 	// gpgme
 	this._gpgme()
 	// gmime3
@@ -23,7 +23,7 @@ func NewThreads(s tcell.Screen) (this Threads) {
 	return
 }
 
-func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
+func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	// RuneBTee     = '┴'
 	// RuneHLine    = '─'
 	// RuneLLCorner = '└'
@@ -45,12 +45,12 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	return true
 }
 
-func (this *Threads) EventHandler(s tcell.Screen, ev tcell.Event) (ret bool) {
+func (this *Mails) EventHandler(s tcell.Screen, ev tcell.Event) (ret bool) {
 	ret = false
 	return
 }
 
-func (this *Threads) _gpgme() {
+func (this *Mails) _gpgme() {
 	// see ~/go/pkg/mod/github.com/proglottis/gpgme@v0.1.1/gpgme.go
 	if context, err := gpgme.New(); err != nil {
 		panic(err)
@@ -75,6 +75,6 @@ func (this *Threads) _gpgme() {
 	}
 }
 
-func (this *Threads) _gmime3() {
+func (this *Mails) _gmime3() {
 	//_, _ = gmime3.Parse("")
 }
