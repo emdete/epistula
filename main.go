@@ -28,6 +28,8 @@ func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int)
 			s.SetContent(x, y, c, comb, style)
 			x += w
 			width -= w
+		} else {
+			break
 		}
 	}
 	for width > 0 {
@@ -79,6 +81,7 @@ func main() {
 		enumeration = NewEnumeration(s)
 		// Threads
 		threads = NewThreads(s)
+		//
 		running := true
 		update := true
 		for running {

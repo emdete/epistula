@@ -8,7 +8,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-
 var QUERY_DEFAULT = "tag:inbox"
 var QUERY_PREFIX = "search "
 var QUERY_SUFFIX = " AND "

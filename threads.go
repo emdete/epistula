@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 	"os/user"
 	"path/filepath"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
@@ -30,7 +31,7 @@ func NewEnumeration(s tcell.Screen) (this Enumeration) {
 	if user, err := user.Current(); err != nil {
 		panic(err)
 	} else if db, err := notmuch.Open(filepath.Join(user.HomeDir, "Maildir"), notmuch.DBReadOnly); err != nil {
-			panic(err)
+		panic(err)
 	} else {
 		this.db = db
 	}
@@ -228,6 +229,8 @@ type ThreadEntry struct {
 	id string
 	author string
 	subject string
+	count int
+	newest time.Time
 }
 
 func newThreadEntry(thread *notmuch.Thread) (*ThreadEntry) {
@@ -243,11 +246,11 @@ func newThreadEntry(thread *notmuch.Thread) (*ThreadEntry) {
 		thread.ID(),
 		"🙂 " + author,
 		thread.Subject(),
+		thread.Count(),
+		thread.NewestDate(),
 	}
-	// thread.Count()
 	// thread.CountMatched()
 	// thread.OldestDate()
-	// thread.NewestDate()
 	// tags := thread.Tags()
 	// var tag *notmuch.Tag
 	// for tags.Next(&tag) {
