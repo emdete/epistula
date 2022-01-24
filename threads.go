@@ -51,7 +51,7 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	this.area_width = w
 	this.area_px = px
 	this.area_py = py
-	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#ee9900"))
+	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#cc7711"))
 	if this.selected_index >= h {
 		this.selected_index = h - 1
 	}
@@ -105,6 +105,9 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) 
 		switch ev.Key() {
 		case tcell.KeyDown:
 			if ev.Modifiers()&tcell.ModCtrl != 0 {
+				for i:=0;i<7;i++ {
+					ret = this.doDown(true)
+				}
 
 			} else {
 				ret = this.doDown(true)

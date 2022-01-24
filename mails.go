@@ -35,14 +35,16 @@ func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	// RuneULCorner = '┌'
 	// RuneURCorner = '┐'
 	// RuneVLine    = '│'
-	cs := tcell.StyleDefault.Reverse(true)
+	cs1 := tcell.StyleDefault.Foreground(tcell.GetColor("#11aa11"))
+	//selected_style := tcell.StyleDefault.Foreground(tcell).Background(tcell.GetColor("#ee9900"))
+	cs := cs1.Reverse(true)
 	emitStr(s, px, py, cs, " " + this.subject, w)
 	for row := 1; row < 24; row++ {
-		s.SetCell(px, py+row, tcell.StyleDefault, tcell.RuneVLine)
+		s.SetCell(px, py+row, cs1, tcell.RuneVLine)
 	}
-	emitStr(s, px+1, py+1, tcell.StyleDefault, "From: " + this.author, w)
-	//emitStr(s, px+1, py+1, tcell.StyleDefault, this.newest, w)
-	s.SetCell(px, py+24, tcell.StyleDefault, tcell.RuneLLCorner)
+	emitStr(s, px+1, py+1, cs1, "From: " + this.author, w)
+	//emitStr(s, px+1, py+1, cs1, this.newest, w)
+	s.SetCell(px, py+24, cs1, tcell.RuneLLCorner)
 	emitStr(s, px+1, py+24, cs, " " + this.subject, w)
 	return true
 }
