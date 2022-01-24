@@ -56,7 +56,7 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 		this.selected_index = h - 1
 	}
 	for i, thread := range this.mailthreads[this.offset:] {
-		log.Printf("%d: %v", i, thread)
+		//log.Printf("%d: %v", i, thread)
 		var cs1, cs2 tcell.Style
 		if this.offset+i == this.selected_index {
 			cs1 = selected_style.Bold(true)
@@ -66,7 +66,7 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 			cs2 = cs1.Bold(false).Foreground(tcell.GetColor("#999999"))
 		}
 		if thread != nil {
-			emitStr(s, px, py+i*2, cs1, thread.author, w)
+			emitStr(s, px, py+i*2, cs1, "🙂 " + thread.author, w)
 			emitStr(s, px, py+i*2+1, cs2, thread.subject, w)
 		} else {
 			emitStr(s, px, py+i*2, tcell.StyleDefault, "", w)
@@ -98,7 +98,8 @@ func (this *Threads) doDown(down bool) bool {
 
 func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
-	pos_old := this.selected_index
+	old_index := this.selected_index
+	log.Printf("EventHandler")
 	switch ev := event.(type) {
 	case *tcell.EventKey:
 		switch ev.Key() {
@@ -138,7 +139,7 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) 
 	case *EventQuery:
 		this.do_query(s, ev.query)
 	}
-	if pos_old != this.selected_index {
+	if old_index != this.selected_index {
 		this.notifyThreadsThread(s)
 	}
 	return
@@ -193,15 +194,61 @@ func (this *Threads) do_query(s tcell.Screen, query string) {
 	overall_t := 0 // too expensive: st.CountThreads()
 	overall_m := st.CountMessages()
 	this.notifyThreadsStatus(s, overall_t, overall_m, this.filtered_t, filtered_m)
+	if this.filtered_t > 0 {
+		this.notifyThreadsThread(s)
+	}
+}
+
+type ThreadEntry struct {
+	id      string
+	author  string
+	subject string
+	count   int
+	newest  time.Time
+}
+
+func newThreadEntry(thread *notmuch.Thread) *ThreadEntry {
+	author := "-"
+	matched, unmatched := thread.Authors()
+	if len(matched) > 0 {
+		author = matched[0]
+	} else if len(unmatched) > 0 {
+		author = unmatched[0]
+	}
+	// log.Printf("matched=%v, unmatched=%v", matched, unmatched)
+	this := ThreadEntry{
+		thread.ID(),
+		author,
+		thread.Subject(),
+		thread.Count(),
+		thread.NewestDate(),
+	}
+	// thread.CountMatched()
+	// thread.OldestDate()
+	// tags := thread.Tags()
+	// var tag *notmuch.Tag
+	// for tags.Next(&tag) {
+	// log.Printf("tag=%s", tag)
+	// }
+	// thread.Messages()
+	// messages := thread.Messages()
+	// var message *notmuch.Message
+	// for messages.Next(&message) {
+	// defer message.Close()
+	// log.Printf("filename=%s", message.Filename())
+	// }
+	return &this
 }
 
 type EventThreadsThread struct {
 	tcell.EventTime
+	ThreadEntry
 }
 
 func (this *Threads) notifyThreadsThread(s tcell.Screen) {
 	ev := &EventThreadsThread{}
 	ev.SetEventNow()
+	ev.ThreadEntry = *this.mailthreads[this.selected_index]
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
@@ -225,45 +272,4 @@ func (this *Threads) notifyThreadsStatus(s tcell.Screen, overall_t, overall_m, f
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
-}
-
-type ThreadEntry struct {
-	id      string
-	author  string
-	subject string
-	count   int
-	newest  time.Time
-}
-
-func newThreadEntry(thread *notmuch.Thread) *ThreadEntry {
-	author := "-"
-	matched, unmatched := thread.Authors()
-	if len(matched) > 0 {
-		author = matched[0]
-	} else if len(unmatched) > 0 {
-		author = unmatched[0]
-	}
-	// log.Printf("matched=%v, unmatched=%v", matched, unmatched)
-	this := ThreadEntry{
-		thread.ID(),
-		"🙂 " + author,
-		thread.Subject(),
-		thread.Count(),
-		thread.NewestDate(),
-	}
-	// thread.CountMatched()
-	// thread.OldestDate()
-	// tags := thread.Tags()
-	// var tag *notmuch.Tag
-	// for tags.Next(&tag) {
-	// log.Printf("tag=%s", tag)
-	// }
-	// thread.Messages()
-	// messages := thread.Messages()
-	// var message *notmuch.Message
-	// for messages.Next(&message) {
-	// defer message.Close()
-	// log.Printf("filename=%s", message.Filename())
-	// }
-	return &this
 }

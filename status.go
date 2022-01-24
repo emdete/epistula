@@ -7,7 +7,9 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-var STATUS_TEMPLATE = "Filtered %d messages from %d threads out of a total of %d messages"
+const (
+	STATUS_TEMPLATE = "Filtered %d messages from %d threads out of a total of %d messages"
+)
 
 type Status struct {
 	line string

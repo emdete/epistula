@@ -115,12 +115,12 @@ func main() {
 					threads.EventHandler(s, event) ||
 					mails.EventHandler(s, event) ||
 					query.EventHandler(s, event)
-			case *EventThreadsStatus:
-				update = update || status.EventHandler(s, event)
-			case *EventThreadsThread:
-				update = update || mails.EventHandler(s, event)
-			case *EventQuery:
+			case *EventQuery: // query input reports new querystring -> threads
 				update = update || threads.EventHandler(s, event)
+			case *EventThreadsStatus: // threads report new thread list / stats -> status
+				update = update || status.EventHandler(s, event)
+			case *EventThreadsThread: // threads report new selected thread -> threads
+				update = update || mails.EventHandler(s, event)
 			}
 		}
 	}

@@ -11,6 +11,7 @@ import (
 )
 
 type Mails struct {
+	ThreadEntry
 }
 
 func NewMails(s tcell.Screen) (this Mails) {
@@ -35,18 +36,25 @@ func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	// RuneURCorner = '┐'
 	// RuneVLine    = '│'
 	cs := tcell.StyleDefault.Reverse(true)
-	emitStr(s, px+1, py+1, cs, " Newsletter KW 4/2022", w)
-	col := 1
-	//for col := 0; col < w; col++ {
-	for row := 2; row < h-4; row++ {
-		s.SetCell(px+col, py+row, tcell.StyleDefault, tcell.RuneVLine)
+	emitStr(s, px, py, cs, " " + this.subject, w)
+	for row := 1; row < 24; row++ {
+		s.SetCell(px, py+row, tcell.StyleDefault, tcell.RuneVLine)
 	}
-	//}
+	emitStr(s, px+1, py+1, tcell.StyleDefault, "From: " + this.author, w)
+	//emitStr(s, px+1, py+1, tcell.StyleDefault, this.newest, w)
+	s.SetCell(px, py+24, tcell.StyleDefault, tcell.RuneLLCorner)
+	emitStr(s, px+1, py+24, cs, " " + this.subject, w)
 	return true
 }
 
-func (this *Mails) EventHandler(s tcell.Screen, ev tcell.Event) (ret bool) {
+func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
+	switch ev := event.(type) {
+	case *EventThreadsThread:
+		log.Printf("EventThreadsThread ev=%v", ev)
+		this.ThreadEntry = ev.ThreadEntry
+		ret = true
+	}
 	return
 }
 
