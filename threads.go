@@ -11,16 +11,19 @@ import (
 	"github.com/zenhack/go.notmuch"
 )
 
+var NotMuchDataBase *notmuch.DB
+
 type Threads struct {
-	db             *notmuch.DB
-	threads        *notmuch.Threads
-	filtered_t     int
-	mailthreads    [100](*ThreadEntry)
-	offset         int
-	area_height    int
-	area_width     int
-	area_px        int
-	area_py        int
+	db *notmuch.DB
+	threads *notmuch.Threads
+	last_query string
+	filtered_t int
+	threadEntries [100](*ThreadEntry)
+	offset int
+	area_height int
+	area_width int
+	area_px int
+	area_py int
 	selected_index int
 }
 
@@ -33,6 +36,7 @@ func NewThreads(s tcell.Screen) (this Threads) {
 		panic(err)
 	} else {
 		this.db = db
+		NotMuchDataBase = db // TODO
 	}
 	return
 }
@@ -55,8 +59,8 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	if this.selected_index >= h {
 		this.selected_index = h - 1
 	}
-	for i, thread := range this.mailthreads[this.offset:] {
-		//log.Printf("%d: %v", i, thread)
+	for i, threadEntry := range this.threadEntries[this.offset:] {
+		//log.Printf("%d: %v", i, threadEntry)
 		var cs1, cs2 tcell.Style
 		if this.offset+i == this.selected_index {
 			cs1 = selected_style.Bold(true)
@@ -65,9 +69,9 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 			cs1 = tcell.StyleDefault.Bold(true)
 			cs2 = cs1.Bold(false).Foreground(tcell.GetColor("#999999"))
 		}
-		if thread != nil {
-			emitStr(s, px, py+i*2, cs1, "🙂 " + thread.author, w)
-			emitStr(s, px, py+i*2+1, cs2, thread.subject, w)
+		if threadEntry != nil {
+			emitStr(s, px, py+i*2, cs1, "🙂 " + threadEntry.author, w)
+			emitStr(s, px, py+i*2+1, cs2, threadEntry.subject, w)
 		} else {
 			emitStr(s, px, py+i*2, tcell.StyleDefault, "", w)
 			emitStr(s, px, py+i*2+1, tcell.StyleDefault, "", w)
@@ -142,72 +146,76 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) 
 	case *EventQuery:
 		this.do_query(s, ev.query)
 	}
-	if old_index != this.selected_index {
+	if old_index != this.selected_index && this.selected_index >= 0 {
 		this.notifyThreadsThread(s)
 	}
 	return
 }
 
 func (this *Threads) do_query(s tcell.Screen, query string) {
-	// this.db.FindMessage(id)
-	// this.db.Tags()
-	if this.threads != nil {
-		this.threads.Close()
-	}
-	nmq := this.db.NewQuery(query)
-	nmq.SetSortScheme(notmuch.SORT_NEWEST_FIRST)
-	nmq.SetExcludeScheme(notmuch.EXCLUDE_ALL)
-	nmq.AddTagExclude("spam")
-	this.filtered_t = nmq.CountThreads()
-	log.Printf("filtered_t=%d", this.filtered_t)
-	filtered_m := nmq.CountMessages()
-	count := 0
-	if threads, err := nmq.Threads(); err == nil {
-		this.threads = threads
-		var thread *notmuch.Thread
-		for this.threads.Next(&thread) {
-			defer thread.Close()
-			log.Printf("%d: %v", count, thread.Subject())
-			this.mailthreads[count] = newThreadEntry(thread)
-			if count >= this.filtered_t { // assertion
-				panic("more threads than reported")
+	if this.last_query != query {
+		this.last_query = query
+		// this.db.Tags()
+		// message := this.db.FindMessage(id)
+		if this.threads != nil {
+			this.threads.Close()
+		}
+		nmq := this.db.NewQuery(query)
+		defer nmq.Close()
+		nmq.SetSortScheme(notmuch.SORT_NEWEST_FIRST)
+		nmq.SetExcludeScheme(notmuch.EXCLUDE_ALL)
+		nmq.AddTagExclude("spam")
+		this.filtered_t = nmq.CountThreads()
+		log.Printf("filtered_t=%d", this.filtered_t)
+		filtered_m := nmq.CountMessages()
+		count := 0
+		if threads, err := nmq.Threads(); err == nil {
+			this.threads = threads
+			var thread *notmuch.Thread
+			for this.threads.Next(&thread) {
+				defer thread.Close()
+				log.Printf("%d: %v", count, thread.Subject())
+				this.threadEntries[count] = newThreadEntry(thread)
+				if count >= this.filtered_t { // assertion
+					panic("more threads than reported")
+				}
+				count++
+				if count >= len(this.threadEntries) {
+					break
+				}
 			}
+			if count < this.filtered_t && count != len(this.threadEntries) { // assertion
+				panic("less threads than reported")
+			}
+			if this.selected_index < 0 {
+				// after empty results move the selection into the result
+				this.selected_index = 0
+			}
+		}
+		for count < len(this.threadEntries) {
+			this.threadEntries[count] = nil
 			count++
-			if count >= len(this.mailthreads) {
-				break
-			}
 		}
-		if count < this.filtered_t && count != len(this.mailthreads) { // assertion
-			panic("less threads than reported")
+		if this.selected_index >= this.filtered_t {
+			this.selected_index = this.filtered_t - 1
+			// -1 being valid for empty results
 		}
-		if this.selected_index < 0 {
-			// after empty results move the selection into the result
-			this.selected_index = 0
+		st := this.db.NewQuery("*")
+		overall_t := 0 // too expensive: st.CountThreads()
+		overall_m := st.CountMessages()
+		this.notifyThreadsStatus(s, overall_t, overall_m, this.filtered_t, filtered_m)
+		if this.filtered_t > 0 {
+			this.notifyThreadsThread(s)
 		}
-	}
-	for count < len(this.mailthreads) {
-		this.mailthreads[count] = nil
-		count++
-	}
-	if this.selected_index >= this.filtered_t {
-		this.selected_index = this.filtered_t - 1
-		// -1 being valid for empty results
-	}
-	st := this.db.NewQuery("*")
-	overall_t := 0 // too expensive: st.CountThreads()
-	overall_m := st.CountMessages()
-	this.notifyThreadsStatus(s, overall_t, overall_m, this.filtered_t, filtered_m)
-	if this.filtered_t > 0 {
-		this.notifyThreadsThread(s)
 	}
 }
 
 type ThreadEntry struct {
-	id      string
-	author  string
+	id string
+	author string
 	subject string
-	count   int
-	newest  time.Time
+	count int
+	newest time.Time
 }
 
 func newThreadEntry(thread *notmuch.Thread) *ThreadEntry {
@@ -251,16 +259,17 @@ type EventThreadsThread struct {
 func (this *Threads) notifyThreadsThread(s tcell.Screen) {
 	ev := &EventThreadsThread{}
 	ev.SetEventNow()
-	ev.ThreadEntry = *this.mailthreads[this.selected_index]
+	ev.ThreadEntry = *this.threadEntries[this.selected_index]
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
+	//x(this.db, ev.id)
 }
 
 type EventThreadsStatus struct {
 	tcell.EventTime
-	overall_t  int
-	overall_m  int
+	overall_t int
+	overall_m int
 	filtered_m int
 	filtered_t int
 }
@@ -276,3 +285,4 @@ func (this *Threads) notifyThreadsStatus(s tcell.Screen, overall_t, overall_m, f
 		panic(err)
 	}
 }
+

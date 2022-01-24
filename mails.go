@@ -2,12 +2,15 @@ package main
 
 import (
 	"log"
+	"os"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
-	// see
+	// see ~/go/pkg/mod/github.com/proglottis/gpgme@v0.1.1
 	"github.com/proglottis/gpgme"
-	// see
+	// see ~/go/pkg/mod/github.com/sendgrid/go-gmime@v0.0.0-20211124164648-4c44cbd981d8/
 	_ "github.com/sendgrid/go-gmime"
+	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
+	"github.com/zenhack/go.notmuch"
 )
 
 type Mails struct {
@@ -25,16 +28,10 @@ func NewMails(s tcell.Screen) (this Mails) {
 }
 
 func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	// RuneBTee     = '┴'
-	// RuneHLine    = '─'
-	// RuneLLCorner = '└'
-	// RuneLRCorner = '┘'
-	// RuneLTee     = '├'
-	// RuneRTee     = '┤'
-	// RuneTTee     = '┬'
-	// RuneULCorner = '┌'
-	// RuneURCorner = '┐'
-	// RuneVLine    = '│'
+	// RuneULCorner = '┌' // RuneTTee  = '┬' // RuneURCorner = '┐'
+	// RuneLTee     = '├' // RuneHLine = '─' // RuneRTee     = '┤'
+	// RuneLLCorner = '└' // RuneBTee  = '┴' // RuneLRCorner = '┘'
+	// RuneVLine =    '│' 
 	cs1 := tcell.StyleDefault.Foreground(tcell.GetColor("#11aa11"))
 	//selected_style := tcell.StyleDefault.Foreground(tcell).Background(tcell.GetColor("#ee9900"))
 	cs := cs1.Reverse(true)
@@ -42,7 +39,7 @@ func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	for row := 1; row < 24; row++ {
 		s.SetCell(px, py+row, cs1, tcell.RuneVLine)
 	}
-	emitStr(s, px+1, py+1, cs1, "From: " + this.author, w)
+	emitStr(s, px+1, py+1, cs1.Bold(true), "From: " + this.author, w)
 	//emitStr(s, px+1, py+1, cs1, this.newest, w)
 	s.SetCell(px, py+24, cs1, tcell.RuneLLCorner)
 	emitStr(s, px+1, py+24, cs, " " + this.subject, w)
@@ -54,6 +51,7 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	switch ev := event.(type) {
 	case *EventThreadsThread:
 		log.Printf("EventThreadsThread ev=%v", ev)
+		iterate(NotMuchDataBase, ev.id)
 		this.ThreadEntry = ev.ThreadEntry
 		ret = true
 	}
@@ -88,3 +86,75 @@ func (this *Mails) _gpgme() {
 func (this *Mails) _gmime3() {
 	//_, _ = gmime3.Parse("")
 }
+
+// iterate over the mails of a thread
+func iterate(db *notmuch.DB, id string) {
+	log.Printf("-- BEGIN iterate %s", id)
+	nmq := db.NewQuery(id)
+	defer nmq.Close()
+	if 1 != nmq.CountThreads() {
+		panic("thread not found")
+	}
+	if threads, err := nmq.Threads(); err != nil {
+		panic(err)
+	} else {
+		var thread *notmuch.Thread
+		for threads.Next(&thread) {
+			defer thread.Close()
+			recurse(thread.Messages())
+		}
+	}
+	log.Printf("-- END iterate")
+}
+
+// recurse through the mails of a thread
+func recurse(messages *notmuch.Messages) {
+	log.Printf("-- BEGIN recurse")
+	message := &notmuch.Message{}
+	for messages.Next(&message) {
+		defer message.Close()
+		//log.Printf("%v", message)
+		log.Printf("%s: %v, '%s', '%s', '%s', '%s', '%s', '%s', '%s', ",
+			message.Filename(), // string
+			//message.Filenames(), // *Filenames
+			message.Date(), // time.Time
+			message.Header("From"), // string
+			message.Header("To"), // string
+			message.Header("CC"), // string
+			message.Header("Subject"), // string
+			message.Header("Return-Path"),
+			message.Header("Delivered-To"),
+			message.Header("Thread-Topic"),
+			//message.Tags(), // *Tags
+			//message.Properties(key string, exact bool), // *MessageProperties
+		)
+		if message.Header("Content-Type") == "multipart/encrypted" {
+			decr(message.Filename())
+		}
+		if replies, err := message.Replies(); err == nil {
+			defer replies.Close()
+			//recurse(replies)
+		}
+	}
+	log.Printf("-- END recurse")
+}
+
+// descrypt the mails of a thread
+func decr(filename string) {
+	if stream, err := os.Open(filename); err != nil {
+		panic(err)
+	} else {
+		if data, err := gpgme.Decrypt(stream); err != nil {
+			log.Printf("%v", err)
+		} else {
+			defer data.Close()
+			buffer := make([]byte, 24)
+			if count, err := data.Read(buffer); err != nil {
+				panic(err)
+			} else {
+				log.Printf("%d, buffer=%v", count, buffer)
+			}
+		}
+	}
+}
+

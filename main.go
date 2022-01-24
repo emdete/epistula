@@ -125,3 +125,22 @@ func main() {
 		}
 	}
 }
+
+// event telling to refresh the threads cause mails arrived / db changed
+type EventMainRefresh struct {
+	tcell.EventTime
+	query string
+}
+
+func notify(s tcell.Screen) {
+	ev := &EventMainRefresh{}
+	ev.SetEventNow()
+	if err := s.PostEvent(ev); err != nil {
+		panic(err)
+	}
+}
+
+type Area struct {
+	px, py, dx, dy int
+}
+

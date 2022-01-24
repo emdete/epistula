@@ -18,7 +18,7 @@ const (
 // keys: Left Right chars enter tab
 type Query struct {
 	pos_cur int
-	query   string
+	query string
 	pasting bool
 }
 
@@ -38,25 +38,6 @@ func (this *Query) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	// Cursor in query line
 	s.ShowCursor(px+len(QUERY_PREFIX)+this.pos_cur, py)
 	return true
-}
-
-type EventQuery struct {
-	tcell.EventTime
-	query string
-}
-
-func (this *Query) notify(s tcell.Screen) {
-	ev := &EventQuery{}
-	ev.SetEventNow()
-	if strings.HasSuffix(this.query, QUERY_SUFFIX) {
-		// if the user did not change the QUERY_SUFFIX, she doesnt want that considered, cut it
-		ev.query = this.query[:len(this.query)-len(QUERY_SUFFIX)]
-	} else {
-		ev.query = this.query
-	}
-	if err := s.PostEvent(ev); err != nil {
-		panic(err)
-	}
 }
 
 func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
@@ -108,3 +89,23 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	}
 	return
 }
+
+type EventQuery struct {
+	tcell.EventTime
+	query string
+}
+
+func (this *Query) notify(s tcell.Screen) {
+	ev := &EventQuery{}
+	ev.SetEventNow()
+	if strings.HasSuffix(this.query, QUERY_SUFFIX) {
+		// if the user did not change the QUERY_SUFFIX, she doesnt want that considered, cut it
+		ev.query = this.query[:len(this.query)-len(QUERY_SUFFIX)]
+	} else {
+		ev.query = this.query
+	}
+	if err := s.PostEvent(ev); err != nil {
+		panic(err)
+	}
+}
+
