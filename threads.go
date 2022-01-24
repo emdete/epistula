@@ -11,7 +11,7 @@ import (
 	"github.com/zenhack/go.notmuch"
 )
 
-type Enumeration struct {
+type Threads struct {
 	db             *notmuch.DB
 	threads        *notmuch.Threads
 	filtered_t     int
@@ -24,9 +24,9 @@ type Enumeration struct {
 	selected_index int
 }
 
-func NewEnumeration(s tcell.Screen) (this Enumeration) {
-	log.Printf("NewEnumeration")
-	this = Enumeration{}
+func NewThreads(s tcell.Screen) (this Threads) {
+	log.Printf("NewThreads")
+	this = Threads{}
 	if user, err := user.Current(); err != nil {
 		panic(err)
 	} else if db, err := notmuch.Open(filepath.Join(user.HomeDir, "Maildir"), notmuch.DBReadOnly); err != nil {
@@ -37,7 +37,7 @@ func NewEnumeration(s tcell.Screen) (this Enumeration) {
 	return
 }
 
-func (this *Enumeration) Close() {
+func (this *Threads) Close() {
 	if this.threads != nil {
 		this.threads.Close()
 	}
@@ -46,7 +46,7 @@ func (this *Enumeration) Close() {
 	}
 }
 
-func (this *Enumeration) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
+func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	this.area_height = h
 	this.area_width = w
 	this.area_px = px
@@ -77,7 +77,7 @@ func (this *Enumeration) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	return true
 }
 
-func (this *Enumeration) doDown(down bool) bool {
+func (this *Threads) doDown(down bool) bool {
 	if down {
 		if this.selected_index+1 < this.filtered_t {
 			this.selected_index++
@@ -96,7 +96,7 @@ func (this *Enumeration) doDown(down bool) bool {
 	return true
 }
 
-func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
+func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	ret = false
 	pos_old := this.selected_index
 	switch ev := event.(type) {
@@ -144,7 +144,7 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 	return
 }
 
-func (this *Enumeration) do_query(s tcell.Screen, query string) {
+func (this *Threads) do_query(s tcell.Screen, query string) {
 	// this.db.FindMessage(id)
 	// this.db.Tags()
 	if this.threads != nil {
@@ -199,7 +199,7 @@ type EventThreadsThread struct {
 	tcell.EventTime
 }
 
-func (this *Enumeration) notifyThreadsThread(s tcell.Screen) {
+func (this *Threads) notifyThreadsThread(s tcell.Screen) {
 	ev := &EventThreadsThread{}
 	ev.SetEventNow()
 	if err := s.PostEvent(ev); err != nil {
@@ -215,7 +215,7 @@ type EventThreadsStatus struct {
 	filtered_t int
 }
 
-func (this *Enumeration) notifyThreadsStatus(s tcell.Screen, overall_t, overall_m, filtered_t, filtered_m int) {
+func (this *Threads) notifyThreadsStatus(s tcell.Screen, overall_t, overall_m, filtered_t, filtered_m int) {
 	ev := &EventThreadsStatus{}
 	ev.SetEventNow()
 	ev.overall_t = overall_t

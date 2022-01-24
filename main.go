@@ -12,7 +12,7 @@ import (
 var frames Frames
 var status Status
 var query Query
-var threads Enumeration
+var threads Threads
 var mails Mails
 
 func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int) {
@@ -77,8 +77,8 @@ func main() {
 		status = NewStatus(s)
 		// Query
 		query = NewQuery(s)
-		// Enumeration
-		threads = NewEnumeration(s)
+		// Threads
+		threads = NewThreads(s)
 		// Mails
 		mails = NewMails(s)
 		//
