@@ -2,9 +2,9 @@ package main
 
 import (
 	"log"
-	"time"
 	"os/user"
 	"path/filepath"
+	"time"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
 	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
@@ -12,22 +12,21 @@ import (
 )
 
 type Enumeration struct {
-	db *notmuch.DB
-	threads *notmuch.Threads
-	filtered_t int
-	mailthreads [100](*ThreadEntry)
-	offset int
-	area_height int
-	area_width int
-	area_px int
-	area_py int
+	db             *notmuch.DB
+	threads        *notmuch.Threads
+	filtered_t     int
+	mailthreads    [100](*ThreadEntry)
+	offset         int
+	area_height    int
+	area_width     int
+	area_px        int
+	area_py        int
 	selected_index int
 }
 
 func NewEnumeration(s tcell.Screen) (this Enumeration) {
 	log.Printf("NewEnumeration")
-	this = Enumeration{
-	}
+	this = Enumeration{}
 	if user, err := user.Current(); err != nil {
 		panic(err)
 	} else if db, err := notmuch.Open(filepath.Join(user.HomeDir, "Maildir"), notmuch.DBReadOnly); err != nil {
@@ -54,12 +53,12 @@ func (this *Enumeration) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	this.area_py = py
 	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#ee9900"))
 	if this.selected_index >= h {
-		this.selected_index = h-1
+		this.selected_index = h - 1
 	}
 	for i, thread := range this.mailthreads[this.offset:] {
 		log.Printf("%d: %v", i, thread)
 		var cs1, cs2 tcell.Style
-		if this.offset + i == this.selected_index {
+		if this.offset+i == this.selected_index {
 			cs1 = selected_style.Bold(true)
 			cs2 = cs1.Bold(false)
 		} else {
@@ -103,13 +102,13 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 	case *tcell.EventKey:
 		switch ev.Key() {
 		case tcell.KeyDown:
-			if ev.Modifiers() & tcell.ModCtrl != 0 {
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
 
 			} else {
 				ret = this.doDown(true)
 			}
 		case tcell.KeyUp:
-			if ev.Modifiers() & tcell.ModCtrl != 0 {
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
 				this.selected_index = 0
 				this.offset = 0
 				ret = true
@@ -126,7 +125,7 @@ func (this *Enumeration) EventHandler(s tcell.Screen, event tcell.Event) (ret bo
 			if x < this.area_width && y < this.area_height {
 				switch button {
 				case tcell.Button1:
-					this.selected_index = y / 2 + this.offset
+					this.selected_index = y/2 + this.offset
 					ret = true
 				case tcell.WheelUp:
 					ret = this.doDown(false)
@@ -178,12 +177,12 @@ func (this *Enumeration) do_query(s tcell.Screen, query string) {
 			this.selected_index = 0
 		}
 	}
-	for count<len(this.mailthreads) {
+	for count < len(this.mailthreads) {
 		this.mailthreads[count] = nil
 		count++
 	}
 	if this.selected_index >= this.filtered_t {
-		this.selected_index = this.filtered_t-1
+		this.selected_index = this.filtered_t - 1
 		// -1 being valid for empty results
 	}
 	st := this.db.NewQuery("*")
@@ -207,8 +206,8 @@ func (this *Enumeration) notifyMail(s tcell.Screen) {
 
 type EventThreadsStatus struct {
 	tcell.EventTime
-	overall_t int
-	overall_m int
+	overall_t  int
+	overall_m  int
 	filtered_m int
 	filtered_t int
 }
@@ -226,14 +225,14 @@ func (this *Enumeration) notifyStatus(s tcell.Screen, overall_t, overall_m, filt
 }
 
 type ThreadEntry struct {
-	id string
-	author string
+	id      string
+	author  string
 	subject string
-	count int
-	newest time.Time
+	count   int
+	newest  time.Time
 }
 
-func newThreadEntry(thread *notmuch.Thread) (*ThreadEntry) {
+func newThreadEntry(thread *notmuch.Thread) *ThreadEntry {
 	author := "-"
 	matched, unmatched := thread.Authors()
 	if len(matched) > 0 {
@@ -242,7 +241,7 @@ func newThreadEntry(thread *notmuch.Thread) (*ThreadEntry) {
 		author = unmatched[0]
 	}
 	// log.Printf("matched=%v, unmatched=%v", matched, unmatched)
-	this := ThreadEntry {
+	this := ThreadEntry{
 		thread.ID(),
 		"🙂 " + author,
 		thread.Subject(),
@@ -265,4 +264,3 @@ func newThreadEntry(thread *notmuch.Thread) (*ThreadEntry) {
 	// }
 	return &this
 }
-

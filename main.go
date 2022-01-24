@@ -52,7 +52,7 @@ func updateScreen(s tcell.Screen) {
 
 func _log() {
 	log.SetPrefix("email ")
-	log.SetFlags(log.Ldate|log.Lmicroseconds|log.LUTC|log.Lshortfile)
+	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
 	log.SetOutput(os.Stderr)
 }
 
@@ -94,8 +94,8 @@ func main() {
 			case *tcell.EventKey:
 				switch ev.Key() {
 				case tcell.KeyRune, tcell.KeyLeft, tcell.KeyRight,
-				tcell.KeyBackspace, tcell.KeyBackspace2, tcell.KeyEnter,
-				tcell.KeyDelete, tcell.KeyHome, tcell.KeyEnd, tcell.KeyTab:
+					tcell.KeyBackspace, tcell.KeyBackspace2, tcell.KeyEnter,
+					tcell.KeyDelete, tcell.KeyHome, tcell.KeyEnd, tcell.KeyTab:
 					update = update || query.EventHandler(s, event)
 				case tcell.KeyUp, tcell.KeyDown:
 					update = update || enumeration.EventHandler(s, event)

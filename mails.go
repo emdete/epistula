@@ -4,9 +4,9 @@ import (
 	"log"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
-	// see 
+	// see
 	"github.com/proglottis/gpgme"
-	// see 
+	// see
 	_ "github.com/sendgrid/go-gmime"
 )
 
@@ -15,8 +15,7 @@ type Threads struct {
 
 func NewThreads(s tcell.Screen) (this Threads) {
 	log.Printf("NewThreads")
-	this = Threads{
-	}
+	this = Threads{}
 	// gpgme
 	this._gpgme()
 	// gmime3
@@ -39,9 +38,9 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	emitStr(s, px+1, py+1, cs, " Newsletter KW 4/2022", w)
 	col := 1
 	//for col := 0; col < w; col++ {
-		for row := 2; row < h-4; row++ {
-			s.SetCell(px+col, py+row, tcell.StyleDefault, tcell.RuneVLine)
-		}
+	for row := 2; row < h-4; row++ {
+		s.SetCell(px+col, py+row, tcell.StyleDefault, tcell.RuneVLine)
+	}
 	//}
 	return true
 }
@@ -79,4 +78,3 @@ func (this *Threads) _gpgme() {
 func (this *Threads) _gmime3() {
 	//_, _ = gmime3.Parse("")
 }
-

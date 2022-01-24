@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"fmt"
+	"log"
 	"strings"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
@@ -11,11 +11,12 @@ import (
 var QUERY_DEFAULT = "tag:inbox"
 var QUERY_PREFIX = "search "
 var QUERY_SUFFIX = " AND "
+
 // Query
 // keys: Left Right chars enter tab
 type Query struct {
 	pos_cur int
-	query string
+	query   string
 	pasting bool
 }
 
@@ -31,7 +32,7 @@ func NewQuery(s tcell.Screen) (this Query) {
 }
 
 func (this *Query) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	emitStr(s, px, py, tcell.StyleDefault, QUERY_PREFIX + this.query, w)
+	emitStr(s, px, py, tcell.StyleDefault, QUERY_PREFIX+this.query, w)
 	// Cursor in query line
 	s.ShowCursor(px+len(QUERY_PREFIX)+this.pos_cur, py)
 	return true

@@ -21,11 +21,11 @@ func NewFrames(s tcell.Screen, pos_vertical_bar int) (ret Frames) {
 
 func (this *Frames) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	this.pos_vertical_bar = w / 3
-	for x:=0;x<w;x++ {
+	for x := 0; x < w; x++ {
 		s.SetCell(x, 2, tcell.StyleDefault, tcell.RuneHLine)
 	}
 	s.SetCell(this.pos_vertical_bar, 2, tcell.StyleDefault, tcell.RuneTTee)
-	for y:=3;y<h;y++ {
+	for y := 3; y < h; y++ {
 		s.SetCell(this.pos_vertical_bar, y, tcell.StyleDefault, tcell.RuneVLine)
 	}
 	return true
@@ -41,4 +41,3 @@ func (this *Frames) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	}
 	return
 }
-
