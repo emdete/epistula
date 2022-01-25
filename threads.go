@@ -124,7 +124,7 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 		this.do_query(s, ev.query)
 		this.dirty = true
 	}
-	if old_index != this.selected_index && this.selected_index >= 0 {
+	if old_index != this.selected_index {
 		this.notifyThreadsThread(s)
 	}
 }
@@ -238,7 +238,9 @@ type EventThreadsThread struct {
 func (this *Threads) notifyThreadsThread(s tcell.Screen) {
 	ev := &EventThreadsThread{}
 	ev.SetEventNow()
-	ev.ThreadEntry = *this.threadEntries[this.selected_index]
+	if this.selected_index >= 0 {
+		ev.ThreadEntry = *this.threadEntries[this.selected_index]
+	}
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
