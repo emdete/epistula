@@ -12,14 +12,14 @@ const (
 )
 
 type Status struct {
+	Area
 	line string
 }
 
-func NewStatus(s tcell.Screen) (ret Status) {
+func NewStatus(s tcell.Screen) (this Status) {
 	log.Printf("NewStatus")
-	ret = Status{
-		fmt.Sprintf(STATUS_TEMPLATE, 0, 0, 0),
-	}
+	this = Status{}
+	this.line = fmt.Sprintf(STATUS_TEMPLATE, 0, 0, 0)
 	return
 }
 
@@ -29,13 +29,11 @@ func (this *Status) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	return true
 }
 
-func (this *Status) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
-	ret = false
+func (this *Status) EventHandler(s tcell.Screen, event tcell.Event) {
 	log.Printf("Status.EventHandler %v", event)
 	switch ev := event.(type) {
 	case *EventThreadsStatus:
 		this.line = fmt.Sprintf(STATUS_TEMPLATE, ev.filtered_m, ev.filtered_t, ev.overall_m)
-		ret = true
+		this.dirty = true
 	}
-	return
 }

@@ -7,14 +7,14 @@ import (
 )
 
 type Frames struct {
+	Area
 	pos_vertical_bar int
 }
 
-func NewFrames(s tcell.Screen, pos_vertical_bar int) (ret Frames) {
+func NewFrames(s tcell.Screen, pos_vertical_bar int) (this Frames) {
 	log.Printf("NewFrames")
-	ret = Frames{
-		pos_vertical_bar,
-	}
+	this = Frames{}
+	this.pos_vertical_bar = pos_vertical_bar
 	s.SetStyle(tcell.StyleDefault) //.Background(tcell.ColorBlack).Background(tcell.GetColor("#000000")).Foreground(tcell.ColorWhite))
 	return
 }
@@ -31,13 +31,11 @@ func (this *Frames) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	return true
 }
 
-func (this *Frames) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
-	ret = false
+func (this *Frames) EventHandler(s tcell.Screen, event tcell.Event) {
 	log.Printf("Frames.EventHandler %v", event)
 	switch event.(type) {
 	case *tcell.EventResize:
 		s.Sync()
-		ret = true
+		this.dirty = true
 	}
-	return
 }

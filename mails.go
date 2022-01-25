@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 	"io/ioutil"
 	"bufio"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
@@ -16,6 +17,7 @@ import (
 )
 
 type Mails struct {
+	Area
 	ThreadEntry
 }
 
@@ -30,60 +32,89 @@ func NewMails(s tcell.Screen) (this Mails) {
 // RuneLLCorner = '└' // RuneBTee  = '┴' // RuneLRCorner = '┘'
 // RuneVLine =    '│' 
 
-func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, envelope *gmime.Envelope, isencrypted, show bool) int {
-	cs1 := tcell.StyleDefault
-	if show {
-		cs1 = cs1.Background(tcell.ColorLightGray)
-	} else {
-		cs1 = cs1.Background(tcell.ColorGray)
-	}
+func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, envelope, decrypted *gmime.Envelope, isencrypted, show bool) int {
+	style_normal := tcell.StyleDefault.Background(tcell.ColorLightGray)
 	if isencrypted {
-		cs1 = cs1.Foreground(tcell.ColorDarkGreen)
+		style_normal = style_normal.Foreground(tcell.ColorDarkGreen)
 	} else {
-		cs1 = cs1.Foreground(tcell.ColorDarkRed)
+		style_normal = style_normal.Foreground(tcell.ColorDarkRed)
 	}
-	cs2 := cs1.Reverse(true)
-	cs3 := tcell.StyleDefault.Foreground(tcell.ColorLightGray)
+	style_header := style_normal.Reverse(true)
+	if !show {
+		style_normal = style_normal.Background(tcell.ColorDarkGray)
+	}
+	style_frame := tcell.StyleDefault.Foreground(tcell.ColorLightGray)
 	y := 0
-	emitStr(s, px, py+y, cs2, " " + envelope.Header("Subject"), w)
+	emitStr(s, px, py+y, style_header, " " + envelope.Header("Subject"), w)
 	y++
 	// from now of we have a RuneVLine, on the left, so text is indented
 	w-- // indent reduced width
-	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-	emitStr(s, px+1, py+y, cs1, envelope.Header("Date"), w)
+	s.SetCell(px, py+y, style_frame, tcell.RuneVLine)
+	emitStr(s, px+1, py+y, style_normal, envelope.Header("Date"), w)
 	y++
-	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-	emitStr(s, px+1, py+y, cs1, "From: " + envelope.Header("From"), w)
+	s.SetCell(px, py+y, style_frame, tcell.RuneVLine)
+	emitStr(s, px+1, py+y, style_normal, "From: " + envelope.Header("From"), w)
 	y++
-	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-	emitStr(s, px+1, py+y, cs1, "To: " + envelope.Header("To"), w)
+	s.SetCell(px, py+y, style_frame, tcell.RuneVLine)
+	emitStr(s, px+1, py+y, style_normal, "To: " + envelope.Header("To"), w)
 	y++
 	if envelope.Header("CC") != "" {
-		s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-		emitStr(s, px+1, py+y, cs1, "CC: " + envelope.Header("CC"), w)
+		s.SetCell(px, py+y, style_frame, tcell.RuneVLine)
+		emitStr(s, px+1, py+y, style_normal, "CC: " + envelope.Header("CC"), w)
 		y++
 	}
-	envelope.Walk(func (part *gmime.Part) error {
-		s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-		emitStr(s, px+1, py+y, cs1, part.ContentType(), w)
-		y++
-		log.Printf("contentype=%s", part.ContentType())
-		if part.ContentType() == "plain/text" {
-			log.Printf("text=%s", part.Text())
-
-		} else if part.IsText() {
-			log.Printf("text=%s", part.Text())
-		} else if part.IsAttachment() {
-			log.Printf("filename=%s", part.Filename())
+	if decrypted != nil {
+		envelope = decrypted
+	}
+	if show {
+		even := true
+		style_normal_dim := style_normal.Background(tcell.ColorDarkGray)
+		if err := envelope.Walk(func (part *gmime.Part) error {
+			style := style_normal
+			if even {
+				style = style_normal_dim
+			}
+			s.SetCell(px, py+y, style_frame, tcell.RuneVLine)
+			emitStr(s, px+1, py+y, style, part.ContentType() + " " + part.Filename(), w)
+			y++
+			log.Printf("contentype=%s", part.ContentType())
+			if part.ContentType() == "message/rfc822" {
+				if envlp, err := gmime.Parse(part.Text()); err != nil {
+					log.Printf("inner message parsing error=%s", err)
+				} else {
+					log.Printf("inner from=%s", envlp.Header("From"))
+				}
+			} else if part.IsText() {
+				log.Printf("text=%s", part.Text())
+				if part.ContentType() == "text/plain" {
+					log.Printf("text=%s", part.Text())
+					c := 0
+					for _, line := range strings.Split(part.Text(), "\n") {
+						s.SetCell(px, py+y, style_frame, tcell.RuneVLine)
+						emitStr(s, px+1, py+y, style, line, w)
+						y++
+						c++
+						if c > 7 {
+							break
+						}
+					}
+				}
+			} else if part.IsAttachment() {
+				log.Printf("filename=%s", part.Filename())
+			}
+			even = !even
+			return nil
+		}); err != nil {
+			panic(nil)
 		}
-		return nil
-	})
-	s.SetCell(px, py+y, cs3, tcell.RuneLLCorner)
+	}
+	s.SetCell(px, py+y, style_frame, tcell.RuneLLCorner)
 	y++
 	return y
 }
 
 func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
+	this.ClearArea(s)
 	if this.id == "" {
 		return true
 	}
@@ -109,7 +140,10 @@ func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 				show := true
 				for messages.Next(&message) {
 					defer message.Close()
-					py += this.drawMessage(s, px, py, w, h, parseMessageFile(message), MessageHasTag(message, "encrypted"), show)
+					envelope := parseMessage(message)
+					defer envelope.Close()
+					isencrypted := MessageHasTag(message, "encrypted")
+					py += this.drawMessage(s, px, py, w, h, envelope, decryptMessage(message, show && isencrypted), isencrypted, show)
 					py-- // put subject right of the RuneLLCorner, last line of last message
 					px++ // indent next
 					w-- // indent reduces width
@@ -121,15 +155,13 @@ func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	return true
 }
 
-func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
-	ret = false
+func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 	log.Printf("Mails.EventHandler %v", event)
 	switch ev := event.(type) {
 	case *EventThreadsThread:
 		this.ThreadEntry = ev.ThreadEntry
-		ret = true
+		this.dirty = true
 	}
-	return
 }
 
 func (this *Mails) hasAdressKey(address string) bool {
@@ -158,8 +190,8 @@ func (this *Mails) hasAdressKey(address string) bool {
 	return false
 }
 
-func parseMessageFile(nmm *notmuch.Message) *gmime.Envelope {
-	if fh, err := os.Open(nmm.Filename()); err != nil {
+func parseMessage(message *notmuch.Message) *gmime.Envelope {
+	if fh, err := os.Open(message.Filename()); err != nil {
 		panic(err)
 	} else {
 		defer fh.Close()
@@ -184,3 +216,27 @@ func parseMessageFile(nmm *notmuch.Message) *gmime.Envelope {
 	return nil
 }
 
+func decryptMessage(message *notmuch.Message, decrypt bool) *gmime.Envelope {
+	if !decrypt {
+		return nil
+	}
+	if stream, err := os.Open(message.Filename()); err != nil {
+		panic(err)
+	} else {
+		if fh, err := gpgme.Decrypt(stream); err != nil {
+			log.Printf("decryptMessage error %v", err)
+		} else {
+			defer fh.Close()
+			if data, err := ioutil.ReadAll(bufio.NewReader(fh)); err != nil {
+				panic(err)
+			} else {
+				if envelope, err := gmime.Parse(string(data)); err != nil {
+					panic(err)
+				} else {
+					return envelope
+				}
+			}
+		}
+	}
+	return nil
+}

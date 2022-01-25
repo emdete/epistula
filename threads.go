@@ -10,6 +10,7 @@ import (
 )
 
 type Threads struct {
+	Area
 	last_query string
 	filtered_t int
 	threadEntries [100](*ThreadEntry)
@@ -77,8 +78,7 @@ func (this *Threads) doDown(down bool) bool {
 	return true
 }
 
-func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
-	ret = false
+func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 	log.Printf("Threads.EventHandler %v", event)
 	old_index := this.selected_index
 	switch ev := event.(type) {
@@ -87,19 +87,19 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) 
 		case tcell.KeyDown:
 			if ev.Modifiers()&tcell.ModCtrl != 0 {
 				for i:=0;i<7;i++ {
-					ret = this.doDown(true)
+					this.dirty = this.doDown(true)
 				}
 
 			} else {
-				ret = this.doDown(true)
+				this.dirty = this.doDown(true)
 			}
 		case tcell.KeyUp:
 			if ev.Modifiers()&tcell.ModCtrl != 0 {
 				this.selected_index = 0
 				this.offset = 0
-				ret = true
+				this.dirty = true
 			} else {
-				ret = this.doDown(false)
+				this.dirty = this.doDown(false)
 			}
 		}
 	case *tcell.EventMouse:
@@ -112,21 +112,21 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) 
 				switch button {
 				case tcell.Button1:
 					this.selected_index = y/2 + this.offset
-					ret = true
+					this.dirty = true
 				case tcell.WheelUp:
-					ret = this.doDown(false)
+					this.dirty = this.doDown(false)
 				case tcell.WheelDown:
-					ret = this.doDown(true)
+					this.dirty = this.doDown(true)
 				}
 			}
 		}
 	case *EventQuery:
 		this.do_query(s, ev.query)
+		this.dirty = true
 	}
 	if old_index != this.selected_index && this.selected_index >= 0 {
 		this.notifyThreadsThread(s)
 	}
-	return
 }
 
 func (this *Threads) do_query(s tcell.Screen, query string) {

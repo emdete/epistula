@@ -20,6 +20,9 @@ var NotMuchDatabasePath string
 
 func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int) {
 	for _, c := range str {
+		if c < ' ' {
+			c = ' '
+		}
 		if width > 0 {
 			var comb []rune
 			w := runewidth.RuneWidth(c)
@@ -44,12 +47,31 @@ func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int)
 
 func updateScreen(s tcell.Screen) {
 	w, h := s.Size()
-	s.Clear()
-	frames.Draw(s, 0, 0, w, h)
-	status.Draw(s, 0, 0, w, 1)
-	query.Draw(s, 0, 1, w, 1)
-	threads.Draw(s, 0, 3, frames.pos_vertical_bar, h-3)
-	mails.Draw(s, frames.pos_vertical_bar+1, 3, w-frames.pos_vertical_bar-1, h-3)
+	if frames.dirty { // TODO or size changed
+		frames.SetSize(0, 0, w, h)
+		frames.Draw(s, 0, 0, w, h)
+		frames.dirty = false
+	}
+	if status.dirty {
+		status.SetSize(0, 0, w, 1)
+		status.Draw(s, 0, 0, w, 1)
+		status.dirty = false
+	}
+	if query.dirty {
+		query.SetSize(0, 1, w, 1)
+		query.Draw(s, 0, 1, w, 1)
+		query.dirty = false
+	}
+	if threads.dirty {
+		threads.SetSize(0, 3, frames.pos_vertical_bar, h-3)
+		threads.Draw(s, 0, 3, frames.pos_vertical_bar, h-3)
+		threads.dirty = false
+	}
+	if mails.dirty {
+		mails.SetSize(frames.pos_vertical_bar+1, 3, w-frames.pos_vertical_bar-1, h-3)
+		mails.Draw(s, frames.pos_vertical_bar+1, 3, w-frames.pos_vertical_bar-1, h-3)
+		mails.dirty = false
+	}
 	s.Show()
 }
 
@@ -79,6 +101,7 @@ func main() {
 		}
 		s.EnableMouse()
 		s.EnablePaste()
+		s.Clear()
 		// Frames
 		frames = NewFrames(s, 61)
 		// Status
@@ -91,12 +114,8 @@ func main() {
 		mails = NewMails(s)
 		//
 		running := true
-		update := true
 		for running {
-			if update {
-				updateScreen(s)
-				update = false
-			}
+			updateScreen(s)
 			event := s.PollEvent()
 			switch ev := event.(type) {
 			case *tcell.EventKey:
@@ -104,31 +123,30 @@ func main() {
 				case tcell.KeyRune, tcell.KeyLeft, tcell.KeyRight,
 					tcell.KeyBackspace, tcell.KeyBackspace2, tcell.KeyEnter,
 					tcell.KeyDelete, tcell.KeyHome, tcell.KeyEnd, tcell.KeyTab:
-					update = update || query.EventHandler(s, event)
+					query.EventHandler(s, event)
 				case tcell.KeyUp, tcell.KeyDown:
-					update = update || threads.EventHandler(s, event)
+					threads.EventHandler(s, event)
 				case tcell.KeyPgUp, tcell.KeyPgDn:
-					update = update || mails.EventHandler(s, event)
+					mails.EventHandler(s, event)
 				case tcell.KeyEscape:
 					running = false
 				case tcell.KeyCtrlB:
 					s.Beep()
 				}
 			case *tcell.EventResize:
-				update = update || frames.EventHandler(s, event)
+				frames.EventHandler(s, event)
 			case *tcell.EventPaste:
-				update = update || query.EventHandler(s, event)
+				query.EventHandler(s, event)
 			case *tcell.EventMouse:
-				update = update ||
-					threads.EventHandler(s, event) ||
-					mails.EventHandler(s, event) ||
-					query.EventHandler(s, event)
+				threads.EventHandler(s, event) // TODO
+				mails.EventHandler(s, event)
+				query.EventHandler(s, event)
 			case *EventQuery: // query input reports new querystring -> threads
-				update = update || threads.EventHandler(s, event)
+				threads.EventHandler(s, event)
 			case *EventThreadsStatus: // threads report new thread list / stats -> status
-				update = update || status.EventHandler(s, event)
+				status.EventHandler(s, event)
 			case *EventThreadsThread: // threads report new selected thread -> threads
-				update = update || mails.EventHandler(s, event)
+				mails.EventHandler(s, event)
 			}
 		}
 	}
@@ -150,5 +168,20 @@ func notify(s tcell.Screen) {
 
 type Area struct {
 	px, py, dx, dy int
+	dirty bool
 }
 
+func (this *Area) SetSize(px, py, dx, dy int) {
+	this.px = px
+	this.py = py
+	this.dx = dx
+	this.dy = dy
+}
+
+func (this *Area) ClearArea(s tcell.Screen) {
+	for x:=this.px;x<this.px+this.dx;x++ {
+		for y:=this.py;y<this.py+this.dy;y++ {
+			s.SetCell(x, y, tcell.StyleDefault, ' ')
+		}
+	}
+}

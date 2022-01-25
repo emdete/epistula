@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	QUERY_DEFAULT = "tag:inbox"
+	QUERY_DEFAULT = "tag:nothing"
+	//QUERY_DEFAULT = "tag:inbox"
 	QUERY_PREFIX = "search "
 	QUERY_SUFFIX = " AND "
 )
@@ -17,6 +18,7 @@ const (
 // Query
 // keys: Left Right chars enter tab
 type Query struct {
+	Area
 	pos_cur int
 	query string
 	pasting bool
@@ -24,11 +26,11 @@ type Query struct {
 
 func NewQuery(s tcell.Screen) (this Query) {
 	log.Printf("NewQuery")
-	this = Query{
-		len(QUERY_DEFAULT) + len(QUERY_SUFFIX),
-		QUERY_DEFAULT + QUERY_SUFFIX,
-		false,
-	}
+	this = Query{}
+	this.pos_cur = len(QUERY_DEFAULT) + len(QUERY_SUFFIX)
+	this.query = QUERY_DEFAULT + QUERY_SUFFIX
+	this.pasting = false
+	this.dirty = true
 	this.notify(s)
 	return
 }
@@ -40,8 +42,7 @@ func (this *Query) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	return true
 }
 
-func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
-	ret = false
+func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) {
 	log.Printf("Query.EventHandler %v", event)
 	switch ev := event.(type) {
 	case *tcell.EventKey:
@@ -50,45 +51,44 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 			r := ev.Rune()
 			this.query = fmt.Sprintf("%s%c%s", this.query[:this.pos_cur], r, this.query[this.pos_cur:])
 			this.pos_cur++
-			ret = true
+			this.dirty = true
 		case tcell.KeyLeft:
 			if this.pos_cur > 0 {
 				this.pos_cur--
-				ret = true
+				this.dirty = true
 			}
 		case tcell.KeyRight:
 			if this.pos_cur < len(this.query) {
 				this.pos_cur++
-				ret = true
+				this.dirty = true
 			}
 		case tcell.KeyBackspace, tcell.KeyBackspace2:
 			if this.pos_cur > 0 {
 				this.pos_cur--
 				this.query = this.query[:this.pos_cur] + this.query[this.pos_cur+1:]
-				ret = true
+				this.dirty = true
 			}
 		case tcell.KeyDelete:
 			if this.pos_cur > 0 {
 				this.query = this.query[:this.pos_cur] + this.query[this.pos_cur+1:]
-				ret = true
+				this.dirty = true
 			}
 		case tcell.KeyHome:
 			this.pos_cur = 0
-			ret = true
+			this.dirty = true
 		case tcell.KeyEnd:
 			this.pos_cur = len(this.query)
-			ret = true
+			this.dirty = true
 		case tcell.KeyEnter:
 			this.notify(s)
 		case tcell.KeyTab:
 			this.pos_cur = len(QUERY_DEFAULT) + len(QUERY_SUFFIX)
 			this.query = QUERY_DEFAULT + QUERY_SUFFIX
-			ret = true
+			this.dirty = true
 		}
 	case *tcell.EventPaste:
 		this.pasting = ev.Start()
 	}
-	return
 }
 
 type EventQuery struct {
