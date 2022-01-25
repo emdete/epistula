@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"os/user"
+	"path/filepath"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
 	"github.com/gdamore/tcell/v2/encoding"
@@ -14,6 +16,7 @@ var status Status
 var query Query
 var threads Threads
 var mails Mails
+var NotMuchDatabasePath string
 
 func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int) {
 	for _, c := range str {
@@ -66,6 +69,11 @@ func main() {
 		panic(err)
 	} else {
 		defer s.Fini()
+		if usr, err := user.Current(); err != nil {
+			panic(err)
+		} else {
+			NotMuchDatabasePath = filepath.Join(usr.HomeDir, "Maildir")
+		}
 		if err := s.Init(); err != nil {
 			panic(err)
 		}

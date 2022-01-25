@@ -3,12 +3,14 @@ package main
 import (
 	"log"
 	"os"
+	"io/ioutil"
+	"bufio"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
 	// see ~/go/pkg/mod/github.com/proglottis/gpgme@v0.1.1
 	"github.com/proglottis/gpgme"
 	// see ~/go/pkg/mod/github.com/sendgrid/go-gmime@v0.0.0-20211124164648-4c44cbd981d8/
-	_ "github.com/sendgrid/go-gmime"
+	"github.com/sendgrid/go-gmime/gmime"
 	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
 	"github.com/zenhack/go.notmuch"
 )
@@ -28,15 +30,12 @@ func NewMails(s tcell.Screen) (this Mails) {
 // RuneLLCorner = '└' // RuneBTee  = '┴' // RuneLRCorner = '┘'
 // RuneVLine =    '│' 
 
-func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, message *notmuch.Message) int {
-	cs1 := tcell.StyleDefault.Background(tcell.ColorLightGray)
-	isencrypted := false
-	tags := message.Tags()
-	var tag *notmuch.Tag
-	for tags.Next(&tag) {
-		if tag.Value == "encrypted" {
-			isencrypted = true
-		}
+func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, envelope *gmime.Envelope, isencrypted, show bool) int {
+	cs1 := tcell.StyleDefault
+	if show {
+		cs1 = cs1.Background(tcell.ColorLightGray)
+	} else {
+		cs1 = cs1.Background(tcell.ColorGray)
 	}
 	if isencrypted {
 		cs1 = cs1.Foreground(tcell.ColorDarkGreen)
@@ -46,22 +45,39 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, message *notmuc
 	cs2 := cs1.Reverse(true)
 	cs3 := tcell.StyleDefault.Foreground(tcell.ColorLightGray)
 	y := 0
-	emitStr(s, px, py+y, cs2, " " + message.Header("Subject"), w)
+	emitStr(s, px, py+y, cs2, " " + envelope.Header("Subject"), w)
+	y++
+	// from now of we have a RuneVLine, on the left, so text is indented
+	w-- // indent reduced width
+	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
+	emitStr(s, px+1, py+y, cs1, envelope.Header("Date"), w)
 	y++
 	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-	emitStr(s, px+1, py+y, cs1, message.Date().String(), w)
+	emitStr(s, px+1, py+y, cs1, "From: " + envelope.Header("From"), w)
 	y++
 	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-	emitStr(s, px+1, py+y, cs1, "From: " + message.Header("From"), w)
+	emitStr(s, px+1, py+y, cs1, "To: " + envelope.Header("To"), w)
 	y++
-	s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-	emitStr(s, px+1, py+y, cs1, "To: " + message.Header("To"), w)
-	y++
-	if message.Header("CC") != "" {
+	if envelope.Header("CC") != "" {
 		s.SetCell(px, py+y, cs3, tcell.RuneVLine)
-		emitStr(s, px+1, py+y, cs1, "CC: " + message.Header("CC"), w)
+		emitStr(s, px+1, py+y, cs1, "CC: " + envelope.Header("CC"), w)
 		y++
 	}
+	envelope.Walk(func (part *gmime.Part) error {
+		s.SetCell(px, py+y, cs3, tcell.RuneVLine)
+		emitStr(s, px+1, py+y, cs1, part.ContentType(), w)
+		y++
+		log.Printf("contentype=%s", part.ContentType())
+		if part.ContentType() == "plain/text" {
+			log.Printf("text=%s", part.Text())
+
+		} else if part.IsText() {
+			log.Printf("text=%s", part.Text())
+		} else if part.IsAttachment() {
+			log.Printf("filename=%s", part.Filename())
+		}
+		return nil
+	})
 	s.SetCell(px, py+y, cs3, tcell.RuneLLCorner)
 	y++
 	return y
@@ -72,24 +88,33 @@ func (this *Mails) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 		return true
 	}
 	log.Printf("Mails.Draw '%v'", this.id)
-	query := NotMuchDataBase.NewQuery(this.id)
-	defer query.Close()
-	if 1 != query.CountThreads() {
-		return
-	}
-	if threads, err := query.Threads(); err != nil {
-		return
+	if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadOnly); err != nil {
+		panic(err)
 	} else {
-		var thread *notmuch.Thread
-		for threads.Next(&thread) {
-			defer thread.Close()
-			message := &notmuch.Message{}
-			messages := thread.Messages()
-			for messages.Next(&message) {
-				defer message.Close()
-				py += this.drawMessage(s, px, py, w, h, message)
-				py--
-				px++
+		defer db.Close()
+		query := db.NewQuery(this.id)
+		defer query.Close()
+		if 1 != query.CountThreads() {
+			return
+		}
+		if threads, err := query.Threads(); err != nil {
+			log.Printf("Mails: thread id=%s not found", this.id)
+			return
+		} else {
+			var thread *notmuch.Thread
+			for threads.Next(&thread) {
+				defer thread.Close()
+				message := &notmuch.Message{}
+				messages := thread.Messages()
+				show := true
+				for messages.Next(&message) {
+					defer message.Close()
+					py += this.drawMessage(s, px, py, w, h, parseMessageFile(message), MessageHasTag(message, "encrypted"), show)
+					py-- // put subject right of the RuneLLCorner, last line of last message
+					px++ // indent next
+					w-- // indent reduces width
+					show = false
+				}
 			}
 		}
 	}
@@ -102,20 +127,18 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) {
 	switch ev := event.(type) {
 	case *EventThreadsThread:
 		this.ThreadEntry = ev.ThreadEntry
-		//retrieveMail(NotMuchDataBase, this.id)
 		ret = true
 	}
 	return
 }
 
-func (this *Mails) _gpgme() {
-	// see ~/go/pkg/mod/github.com/proglottis/gpgme@v0.1.1/gpgme.go
+func (this *Mails) hasAdressKey(address string) bool {
 	if context, err := gpgme.New(); err != nil {
-		panic(err)
+		log.Printf("error %v on getting context", err)
 	} else {
 		defer context.Release()
-		if keys, err := gpgme.FindKeys("mdt@emdete.de", false); err != nil {
-			panic(err)
+		if keys, err := gpgme.FindKeys(address, false); err != nil {
+			log.Printf("error %v on finding keys for %s", err, address)
 		} else {
 			for _, key := range keys {
 				userID := key.UserIDs()
@@ -129,84 +152,35 @@ func (this *Mails) _gpgme() {
 					subKey = subKey.Next()
 				}
 			}
+			return true
 		}
 	}
+	return false
 }
 
-func (this *Mails) _gmime3() {
-	//_, _ = gmime3.Parse("")
-}
-
-// retrieveMail over the mails of a thread
-func retrieveMail(db *notmuch.DB, id string) {
-	log.Printf("-- [ retrieveMail %s", id)
-	query := db.NewQuery(id)
-	defer query.Close()
-	if 1 != query.CountThreads() {
-		panic("thread not found")
-	}
-	if threads, err := query.Threads(); err != nil {
+func parseMessageFile(nmm *notmuch.Message) *gmime.Envelope {
+	if fh, err := os.Open(nmm.Filename()); err != nil {
 		panic(err)
 	} else {
-		var thread *notmuch.Thread
-		for threads.Next(&thread) {
-			defer thread.Close()
-			recurse(thread.Messages())
-		}
-	}
-	log.Printf("-- ] retrieveMail")
-}
-
-// recurse through the mails of a thread
-func recurse(messages *notmuch.Messages) {
-	log.Printf("-- [ recurse")
-	message := &notmuch.Message{}
-	for messages.Next(&message) {
-		defer message.Close()
-		//log.Printf("%v", message)
-		log.Printf("%s: %v, '%s', '%s', '%s', '%s', '%s', '%s', '%s', ",
-			message.Filename(), // string
-			//message.Filenames(), // *Filenames
-			message.Date(), // time.Time
-			message.Header("From"), // string
-			message.Header("To"), // string
-			message.Header("CC"), // string
-			message.Header("Subject"), // string
-			message.Header("Return-Path"),
-			message.Header("Delivered-To"),
-			message.Header("Thread-Topic"),
-			//message.Tags(), // *Tags
-			//message.Properties(key string, exact bool), // *MessageProperties
-		)
-		if message.Header("Content-Type") == "multipart/encrypted" {
-			decr(message.Filename())
-		}
-		if replies, err := message.Replies(); err == nil {
-			defer replies.Close()
-			//recurse(replies)
-		}
-	}
-	log.Printf("-- ] recurse")
-}
-
-// descrypt the mails of a thread
-func decr(filename string) {
-	log.Printf("-- [ decr")
-	if stream, err := os.Open(filename); err != nil {
-		panic(err)
-	} else {
-		if data, err := gpgme.Decrypt(stream); err != nil {
-			log.Printf("%v", err)
+		defer fh.Close()
+		if data, err := ioutil.ReadAll(bufio.NewReader(fh)); err != nil {
+			panic(err)
 		} else {
-			defer data.Close()
-			buffer := make([]byte, 24)
-			if count, err := data.Read(buffer); err != nil {
+			if envelope, err := gmime.Parse(string(data)); err != nil {
 				panic(err)
 			} else {
-				log.Printf("%d, buffer=%v", count, buffer)
+				/*
+				defer envelope.Close()
+				if b, err := envelope.Export(); err != nil {
+					log.Printf("%v\n", err)
+				} else {
+					log.Printf("%v\n", b)
+				}
+				*/
+				return envelope
 			}
 		}
 	}
-	log.Printf("-- ] decr")
+	return nil
 }
 

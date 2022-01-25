@@ -2,8 +2,6 @@ package main
 
 import (
 	"log"
-	"os/user"
-	"path/filepath"
 	"time"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
@@ -11,11 +9,7 @@ import (
 	"github.com/zenhack/go.notmuch"
 )
 
-var NotMuchDataBase *notmuch.DB
-
 type Threads struct {
-	db *notmuch.DB
-	threads *notmuch.Threads
 	last_query string
 	filtered_t int
 	threadEntries [100](*ThreadEntry)
@@ -30,24 +24,10 @@ type Threads struct {
 func NewThreads(s tcell.Screen) (this Threads) {
 	log.Printf("NewThreads")
 	this = Threads{}
-	if user, err := user.Current(); err != nil {
-		panic(err)
-	} else if db, err := notmuch.Open(filepath.Join(user.HomeDir, "Maildir"), notmuch.DBReadOnly); err != nil {
-		panic(err)
-	} else {
-		this.db = db
-		NotMuchDataBase = db // TODO
-	}
 	return
 }
 
 func (this *Threads) Close() {
-	if this.threads != nil {
-		this.threads.Close()
-	}
-	if this.db != nil {
-		this.db.Close()
-	}
 }
 
 func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
@@ -152,56 +132,59 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) (ret bool) 
 func (this *Threads) do_query(s tcell.Screen, query string) {
 	if this.last_query != query {
 		this.last_query = query
-		// this.db.Tags()
-		// message := this.db.FindMessage(id)
-		if this.threads != nil {
-			this.threads.Close()
-		}
-		nmq := this.db.NewQuery(query)
-		defer nmq.Close()
-		nmq.SetSortScheme(notmuch.SORT_NEWEST_FIRST)
-		nmq.SetExcludeScheme(notmuch.EXCLUDE_ALL)
-		nmq.AddTagExclude("spam")
-		this.filtered_t = nmq.CountThreads()
-		log.Printf("filtered_t=%d", this.filtered_t)
-		filtered_m := nmq.CountMessages()
-		count := 0
-		if threads, err := nmq.Threads(); err == nil {
-			this.threads = threads
-			var thread *notmuch.Thread
-			for this.threads.Next(&thread) {
-				defer thread.Close()
-				log.Printf("%d: %v", count, thread.Subject())
-				this.threadEntries[count] = newThreadEntry(thread)
-				if count >= this.filtered_t { // assertion
-					panic("more threads than reported")
-				}
-				count++
-				if count >= len(this.threadEntries) {
-					this.filtered_t = len(this.threadEntries)
-					break
-				}
-			}
-			if count < this.filtered_t && count != len(this.threadEntries) { // assertion
-				panic("less threads than reported")
-			}
-		}
-		for count < len(this.threadEntries) {
-			this.threadEntries[count] = nil
-			count++
-		}
-		if this.filtered_t <= 0 {
-			this.selected_index = -1 // -1 being valid for empty results
+		if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadOnly); err != nil {
+			panic(err)
 		} else {
-			this.selected_index = 0
-		}
-		this.offset = 0
-		st := this.db.NewQuery("*")
-		overall_t := 0 // too expensive: st.CountThreads()
-		overall_m := st.CountMessages()
-		this.notifyThreadsStatus(s, overall_t, overall_m, this.filtered_t, filtered_m)
-		if this.filtered_t > 0 {
-			this.notifyThreadsThread(s)
+			defer db.Close()
+			// db.Tags()
+			// db.FindMessage(id)
+			nmq := db.NewQuery(query)
+			defer nmq.Close()
+			nmq.SetSortScheme(notmuch.SORT_NEWEST_FIRST)
+			nmq.SetExcludeScheme(notmuch.EXCLUDE_ALL)
+			nmq.AddTagExclude("spam")
+			this.filtered_t = nmq.CountThreads()
+			log.Printf("filtered_t=%d", this.filtered_t)
+			filtered_m := nmq.CountMessages()
+			count := 0
+			if threads, err := nmq.Threads(); err == nil {
+				defer threads.Close()
+				threads = threads
+				var thread *notmuch.Thread
+				for threads.Next(&thread) {
+					defer thread.Close()
+					log.Printf("%d: %v", count, thread.Subject())
+					this.threadEntries[count] = newThreadEntry(thread)
+					if count >= this.filtered_t { // assertion
+						panic("more threads than reported")
+					}
+					count++
+					if count >= len(this.threadEntries) {
+						this.filtered_t = len(this.threadEntries)
+						break
+					}
+				}
+				if count < this.filtered_t && count != len(this.threadEntries) { // assertion
+					panic("less threads than reported")
+				}
+			}
+			for count < len(this.threadEntries) {
+				this.threadEntries[count] = nil
+				count++
+			}
+			if this.filtered_t <= 0 {
+				this.selected_index = -1 // -1 being valid for empty results
+			} else {
+				this.selected_index = 0
+			}
+			this.offset = 0
+			st := db.NewQuery("*")
+			overall_t := 0 // too expensive: st.CountThreads()
+			overall_m := st.CountMessages()
+			this.notifyThreadsStatus(s, overall_t, overall_m, this.filtered_t, filtered_m)
+			if this.filtered_t > 0 {
+				this.notifyThreadsThread(s)
+			}
 		}
 	}
 }
@@ -280,5 +263,16 @@ func (this *Threads) notifyThreadsStatus(s tcell.Screen, overall_t, overall_m, f
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
+}
+
+func MessageHasTag(message *notmuch.Message, search string) bool {
+	tags := message.Tags()
+	var tag *notmuch.Tag
+	for tags.Next(&tag) {
+		if tag.Value == search {
+			return true
+		}
+	}
+	return false
 }
 
