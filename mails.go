@@ -104,8 +104,8 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, envelope, decry
 					c := 0
 					for _, line := range strings.Split(part.Text(), "\n") {
 						this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
-						this.SetParagraph(s, px+1, py+y, style, line, w)
-						y++
+						_, _ = this.SetParagraph(s, px+1, py+y, style, line, w)
+						y++ // TODO done in SetParagraph
 						c++
 						if c > 30 {
 							break

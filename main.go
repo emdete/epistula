@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 	"os/user"
 	"path/filepath"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
@@ -207,7 +208,25 @@ func (this *Area) SetString(s tcell.Screen, x, y int, style tcell.Style, str str
 }
 
 func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, str string, width int) (int, int) {
-	x = this.SetString(s, x, y, style, str, width)
+	if false {
+		px := x
+		pwidth := width
+		for _, word := range strings.Split(str, " ") {
+			if px + len(word) > pwidth {
+				px = this.SetString(s, px, y, style, "", pwidth)
+				y++
+				px = x
+				pwidth = width
+			}
+			// if len(word) > width // TODO
+			px = this.SetString(s, px, y, style, word, len(word)+1)
+			pwidth -= len(word)+1
+		}
+		px = this.SetString(s, px, y, style, "", pwidth)
+	} else {
+		x = this.SetString(s, x, y, style, str, width)
+		y++
+	}
 	return x, y
 }
 
