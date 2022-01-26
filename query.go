@@ -51,15 +51,23 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) {
 			this.pos_cur++
 			this.dirty = true
 		case tcell.KeyLeft:
-			if this.pos_cur > 0 {
-				this.pos_cur--
-				this.dirty = true
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
+				this.pos_cur = 0
+			} else {
+				if this.pos_cur > 0 {
+					this.pos_cur--
+				}
 			}
+			this.dirty = true
 		case tcell.KeyRight:
-			if this.pos_cur < len(this.query) {
-				this.pos_cur++
-				this.dirty = true
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
+				this.pos_cur = len(this.query) - 1
+			} else {
+				if this.pos_cur < len(this.query) {
+					this.pos_cur++
+				}
 			}
+			this.dirty = true
 		case tcell.KeyBackspace, tcell.KeyBackspace2:
 			if this.pos_cur > 0 {
 				this.pos_cur--
