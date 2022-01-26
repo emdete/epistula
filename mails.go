@@ -103,13 +103,18 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 					this.SetContent(s, px+w-1, py+y-1, MAILS_OPEN, nil, style)
 					c := 0
 					paragraphprefix := ""
+					lastparagraphempty := false
 					for _, paragraph := range strings.Split(part.Text(), "\n") {
 						oy := y
-						_, y = this.SetParagraph(s, px+1, py+y, style, paragraphprefix, paragraph, w)
-						for oy < y {
-							this.SetContent(s, px, py+oy, tcell.RuneVLine, nil, style_frame)
-							oy++
+						paragraph = strings.TrimSpace(paragraph)
+						if !lastparagraphempty || len(paragraph) > 0 {
+							_, y = this.SetParagraph(s, px+1, py+y, style, paragraphprefix, paragraph, w)
+							for oy < y {
+								this.SetContent(s, px, py+oy, tcell.RuneVLine, nil, style_frame)
+								oy++
+							}
 						}
+						lastparagraphempty = len(paragraph) == 0
 						c++
 						if c > 12 {
 							this.SetContent(s, px+w-1, py+y-1, '+', nil, style)

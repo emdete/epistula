@@ -216,16 +216,18 @@ func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, para
 	if true {
 		px := 0
 		for _, word := range strings.Split(paragraph, " ") {
-			if px + len(word) > width {
-				this.SetString(s, x+px, y, style, "", width-px)
-				y++
-				px = 0
+			if len(word) > 0 { // remove double space
+				if px + len(word) > width {
+					this.SetString(s, x+px, y, style, "", width-px)
+					y++
+					px = 0
+				}
+				if px == 0 {
+					px += this.SetString(s, x+px, y, style, paragraphprefix, len(paragraphprefix))
+				}
+				// if len(word) > width // TODO
+				px += this.SetString(s, x+px, y, style, word, len(word)+1)
 			}
-			if px == 0 {
-				px += this.SetString(s, x+px, y, style, paragraphprefix, len(word))
-			}
-			// if len(word) > width // TODO
-			px += this.SetString(s, x+px, y, style, word, len(word)+1)
 		}
 		this.SetString(s, x+px, y, style, "", width+px)
 		y++
@@ -233,7 +235,7 @@ func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, para
 		this.SetString(s, x, y, style, paragraph, width)
 		y++
 	}
-	//log.Printf("SetParagraph y=%d %s", y, paragraph)
+	log.Printf("SetParagraph y=%d '%s'", y, paragraph)
 	return x, y
 }
 

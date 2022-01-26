@@ -24,6 +24,10 @@ func NewThreads(s tcell.Screen) (this Threads) {
 	return
 }
 
+const (
+	THREADS_PAGE = 13
+)
+
 func (this *Threads) Close() {
 }
 
@@ -78,7 +82,7 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 		switch ev.Key() {
 		case tcell.KeyDown:
 			if ev.Modifiers()&tcell.ModCtrl != 0 {
-				for i:=0;i<7;i++ {
+				for i:=0;i<THREADS_PAGE;i++ {
 					this.dirty = this.doDown(true)
 				}
 
@@ -87,7 +91,7 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 			}
 		case tcell.KeyUp:
 			if ev.Modifiers()&tcell.ModCtrl != 0 {
-				for i:=0;i<7;i++ {
+				for i:=0;i<THREADS_PAGE;i++ {
 					this.dirty = this.doDown(false)
 				}
 			} else {
