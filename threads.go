@@ -87,9 +87,9 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 			}
 		case tcell.KeyUp:
 			if ev.Modifiers()&tcell.ModCtrl != 0 {
-				this.selected_index = 0
-				this.offset = 0
-				this.dirty = true
+				for i:=0;i<7;i++ {
+					this.dirty = this.doDown(false)
+				}
 			} else {
 				this.dirty = this.doDown(false)
 			}

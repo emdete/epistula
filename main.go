@@ -177,10 +177,15 @@ func (this *Area) ClearArea(s tcell.Screen) {
 }
 
 func (this *Area) SetContent(s tcell.Screen, x int, y int, mainc rune, combc []rune, style tcell.Style) {
-	s.SetContent(x+this.px, y+this.py, mainc, combc, style)
+	if x < this.dx && y < this.dy {
+		s.SetContent(x+this.px, y+this.py, mainc, combc, style)
+	} else {
+		//log.Printf("SetContent off screen %#v x=%d y=%d %c", this, x, y, mainc)
+	}
 }
 
 func (this *Area) SetString(s tcell.Screen, x, y int, style tcell.Style, str string, width int) int {
+	px := 0
 	for _, c := range str {
 		if c < ' ' {
 			c = ' '
@@ -192,41 +197,43 @@ func (this *Area) SetString(s tcell.Screen, x, y int, style tcell.Style, str str
 			c = ' '
 			w = 1
 		}
-		this.SetContent(s, x, y, c, comb, style)
-		x += w
+		this.SetContent(s, x+px, y, c, comb, style)
+		px += w
 		width -= w
 		if width <= 0 {
 			break
 		}
 	}
 	for width > 0 {
-		this.SetContent(s, x, y, ' ', nil, style)
-		x++
+		this.SetContent(s, x+px, y, ' ', nil, style)
+		px++
 		width--
 	}
-	return x
+	return px
 }
 
-func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, str string, width int) (int, int) {
+func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, paragraphprefix, paragraph string, width int) (int, int) {
 	if true {
-		px := x
-		pwidth := width
-		for _, word := range strings.Split(str, " ") {
-			if len(word) > pwidth {
-				px = this.SetString(s, px, y, style, "", pwidth)
+		px := 0
+		for _, word := range strings.Split(paragraph, " ") {
+			if px + len(word) > width {
+				this.SetString(s, x+px, y, style, "", width-px)
 				y++
-				px = x
-				pwidth = width
+				px = 0
+			}
+			if px == 0 {
+				px += this.SetString(s, x+px, y, style, paragraphprefix, len(word))
 			}
 			// if len(word) > width // TODO
-			px = this.SetString(s, px, y, style, word, len(word)+1)
-			pwidth -= len(word)+1
+			px += this.SetString(s, x+px, y, style, word, len(word)+1)
 		}
-		px = this.SetString(s, px, y, style, "", pwidth)
+		this.SetString(s, x+px, y, style, "", width+px)
+		y++
 	} else {
-		x = this.SetString(s, x, y, style, str, width)
+		this.SetString(s, x, y, style, paragraph, width)
 		y++
 	}
+	//log.Printf("SetParagraph y=%d %s", y, paragraph)
 	return x, y
 }
 

@@ -38,7 +38,7 @@ const (
 // RuneLLCorner = '└' // RuneBTee  = '┴' // RuneLRCorner = '┘'
 // RuneVLine =    '│' 
 
-func (this *Mails) drawMessage(s tcell.Screen, envelope, decrypted *gmime.Envelope, isencrypted, show bool) int {
+func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *gmime.Envelope, isencrypted, show bool) int {
 	style_normal := tcell.StyleDefault.Background(tcell.ColorLightGray)
 	if isencrypted {
 		style_normal = style_normal.Foreground(tcell.ColorDarkGreen)
@@ -52,27 +52,27 @@ func (this *Mails) drawMessage(s tcell.Screen, envelope, decrypted *gmime.Envelo
 	style_frame := tcell.StyleDefault.Foreground(tcell.ColorLightGray)
 	y := 0
 	w := this.dx
-	this.SetString(s, 0, y, style_header, " " + envelope.Header("Subject"), w)
+	this.SetString(s, px, py+y, style_header, " " + envelope.Header("Subject"), w)
 	if show {
-		this.SetContent(s, w-1, y, MAILS_OPEN, nil, style_header)
+		this.SetContent(s, px+w-1, py+y, MAILS_OPEN, nil, style_header)
 	} else {
-		this.SetContent(s, w-1, y, MAILS_CLOSE, nil, style_header)
+		this.SetContent(s, px+w-1, py+y, MAILS_CLOSE, nil, style_header)
 	}
 	y++
 	// from now of we have a RuneVLine, on the left, so text is indented
 	w-- // indent reduced width
-	this.SetContent(s, 0, y, tcell.RuneVLine, nil, style_frame)
-	this.SetString(s, 1, y, style_normal, envelope.Header("Date"), w)
+	this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
+	this.SetString(s, px+1, py+y, style_normal, envelope.Header("Date"), w)
 	y++
-	this.SetContent(s, 0, y, tcell.RuneVLine, nil, style_frame)
-	this.SetString(s, 1, y, style_normal, "From: " + envelope.Header("From"), w)
+	this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
+	this.SetString(s, px+1, py+y, style_normal, "From: " + envelope.Header("From"), w)
 	y++
-	this.SetContent(s, 0, y, tcell.RuneVLine, nil, style_frame)
-	this.SetString(s, 1, y, style_normal, "To: " + envelope.Header("To"), w)
+	this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
+	this.SetString(s, px+1, py+y, style_normal, "To: " + envelope.Header("To"), w)
 	y++
 	if envelope.Header("CC") != "" {
-		this.SetContent(s, 0, y, tcell.RuneVLine, nil, style_frame)
-		this.SetString(s, 1, y, style_normal, "CC: " + envelope.Header("CC"), w)
+		this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
+		this.SetString(s, px+1, py+y, style_normal, "CC: " + envelope.Header("CC"), w)
 		y++
 	}
 	if decrypted != nil {
@@ -86,9 +86,9 @@ func (this *Mails) drawMessage(s tcell.Screen, envelope, decrypted *gmime.Envelo
 			if even {
 				style = style_normal_dim
 			}
-			this.SetContent(s, 0, y, tcell.RuneVLine, nil, style_frame)
-			this.SetString(s, 1, y, style, part.ContentType() + " " + part.Filename(), w)
-			this.SetContent(s, w-1, y, MAILS_CLOSE, nil, style)
+			this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
+			this.SetString(s, px+1, py+y, style, part.ContentType() + " " + part.Filename(), w)
+			this.SetContent(s, px+w-1, py+y, MAILS_CLOSE, nil, style)
 			y++
 			log.Printf("contentype=%s", part.ContentType())
 			if part.ContentType() == "message/rfc822" {
@@ -98,26 +98,27 @@ func (this *Mails) drawMessage(s tcell.Screen, envelope, decrypted *gmime.Envelo
 					log.Printf("inner from=%s", envlp.Header("From"))
 				}
 			} else if part.IsText() {
-				log.Printf("text=%s", part.Text())
+				//log.Printf("text=%s", part.Text())
 				if part.ContentType() == "text/plain" {
-					log.Printf("text=%s", part.Text())
-					this.SetContent(s, w-1, y-1, MAILS_OPEN, nil, style)
+					this.SetContent(s, px+w-1, py+y-1, MAILS_OPEN, nil, style)
 					c := 0
-					for _, line := range strings.Split(part.Text(), "\n") {
+					paragraphprefix := ""
+					for _, paragraph := range strings.Split(part.Text(), "\n") {
 						oy := y
-						_, y = this.SetParagraph(s, 1, y, style, line, w)
+						_, y = this.SetParagraph(s, px+1, py+y, style, paragraphprefix, paragraph, w)
 						for oy < y {
-							this.SetContent(s, 0, oy, tcell.RuneVLine, nil, style_frame)
+							this.SetContent(s, px, py+oy, tcell.RuneVLine, nil, style_frame)
 							oy++
 						}
 						c++
-						if c > 30 {
+						if c > 12 {
+							this.SetContent(s, px+w-1, py+y-1, '+', nil, style)
 							break
 						}
 					}
 				}
 			} else if part.IsAttachment() {
-				log.Printf("filename=%s", part.Filename())
+				log.Printf("attachment filename=%s", part.Filename())
 			}
 			even = !even
 			return nil
@@ -125,7 +126,7 @@ func (this *Mails) drawMessage(s tcell.Screen, envelope, decrypted *gmime.Envelo
 			panic(nil)
 		}
 	}
-	this.SetContent(s, 0, y, tcell.RuneLLCorner, nil, style_frame)
+	this.SetContent(s, px, py+y, tcell.RuneLLCorner, nil, style_frame)
 	y++
 	return y
 }
@@ -163,7 +164,7 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 					envelope := parseMessage(message)
 					defer envelope.Close()
 					isencrypted := MessageHasTag(message, "encrypted")
-					py += this.drawMessage(s, envelope, decryptMessage(message, show && isencrypted), isencrypted, show)
+					py += this.drawMessage(s, px, py, envelope, decryptMessage(message, show && isencrypted), isencrypted, show)
 					py-- // put subject right of the RuneLLCorner, last line of last message
 					px++ // indent next
 					dx-- // indent reduces width
