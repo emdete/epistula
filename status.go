@@ -25,7 +25,7 @@ func NewStatus(s tcell.Screen) (this Status) {
 
 func (this *Status) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#cc7711")).Bold(true)
-	emitStr(s, 0, 0, style, this.line, w)
+	this.SetString(s, 0, 0, style, this.line, w)
 	return true
 }
 

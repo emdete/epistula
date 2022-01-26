@@ -36,7 +36,7 @@ func NewQuery(s tcell.Screen) (this Query) {
 }
 
 func (this *Query) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	emitStr(s, px, py, tcell.StyleDefault, QUERY_PREFIX+this.query, w)
+	this.SetString(s, px, py, tcell.StyleDefault, QUERY_PREFIX+this.query, w)
 	// Cursor in query line
 	s.ShowCursor(px+len(QUERY_PREFIX)+this.pos_cur, py)
 	return true

@@ -22,11 +22,11 @@ func NewFrames(s tcell.Screen, pos_vertical_bar int) (this Frames) {
 func (this *Frames) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	this.pos_vertical_bar = w / 3
 	for x := 0; x < w; x++ {
-		s.SetCell(x, 2, tcell.StyleDefault, tcell.RuneHLine)
+		this.SetContent(s, x, 2, tcell.RuneHLine, nil, tcell.StyleDefault)
 	}
-	s.SetCell(this.pos_vertical_bar, 2, tcell.StyleDefault, tcell.RuneTTee)
+	this.SetContent(s, this.pos_vertical_bar, 2, tcell.RuneTTee, nil, tcell.StyleDefault)
 	for y := 3; y < h; y++ {
-		s.SetCell(this.pos_vertical_bar, y, tcell.StyleDefault, tcell.RuneVLine)
+		this.SetContent(s, this.pos_vertical_bar, y, tcell.RuneVLine, nil, tcell.StyleDefault)
 	}
 	return true
 }

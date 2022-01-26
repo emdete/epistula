@@ -48,11 +48,11 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 			cs2 = cs1.Bold(false).Foreground(tcell.GetColor("#999999"))
 		}
 		if threadEntry != nil {
-			emitStr(s, px, py+i*2, cs1, "🙂 " + threadEntry.author, w)
-			emitStr(s, px, py+i*2+1, cs2, threadEntry.subject, w)
+			this.SetString(s, px, py+i*2, cs1, "🙂 " + threadEntry.author, w)
+			this.SetString(s, px, py+i*2+1, cs2, threadEntry.subject, w)
 		} else {
-			emitStr(s, px, py+i*2, tcell.StyleDefault, "", w)
-			emitStr(s, px, py+i*2+1, tcell.StyleDefault, "", w)
+			this.SetString(s, px, py+i*2, tcell.StyleDefault, "", w)
+			this.SetString(s, px, py+i*2+1, tcell.StyleDefault, "", w)
 		}
 		i++
 	}

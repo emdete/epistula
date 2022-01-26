@@ -18,33 +18,6 @@ var threads Threads
 var mails Mails
 var NotMuchDatabasePath string
 
-func emitStr(s tcell.Screen, x, y int, style tcell.Style, str string, width int) {
-	for _, c := range str {
-		if c < ' ' {
-			c = ' '
-		}
-		if width > 0 {
-			var comb []rune
-			w := runewidth.RuneWidth(c)
-			if w == 0 {
-				comb = []rune{c}
-				c = ' '
-				w = 1
-			}
-			s.SetContent(x, y, c, comb, style)
-			x += w
-			width -= w
-		} else {
-			break
-		}
-	}
-	for width > 0 {
-		s.SetContent(x, y, ' ', nil, style)
-		x++
-		width--
-	}
-}
-
 func updateScreen(s tcell.Screen) {
 	w, h := s.Size()
 	if frames.dirty { // TODO or size changed
@@ -130,8 +103,12 @@ func main() {
 					mails.EventHandler(s, event)
 				case tcell.KeyEscape:
 					running = false
+				case tcell.KeyCtrlR:
+					notifyRefresh(s)
 				case tcell.KeyCtrlB:
 					s.Beep()
+				case tcell.KeyCtrlL:
+					s.Sync()
 				}
 			case *tcell.EventResize:
 				frames.EventHandler(s, event)
@@ -158,7 +135,7 @@ type EventMainRefresh struct {
 	query string
 }
 
-func notify(s tcell.Screen) {
+func notifyRefresh(s tcell.Screen) {
 	ev := &EventMainRefresh{}
 	ev.SetEventNow()
 	if err := s.PostEvent(ev); err != nil {
@@ -167,7 +144,8 @@ func notify(s tcell.Screen) {
 }
 
 type Area struct {
-	px, py, dx, dy int
+	px, py, // position on screen
+	dx, dy int // size on screen
 	dirty bool
 }
 
@@ -181,7 +159,44 @@ func (this *Area) SetSize(px, py, dx, dy int) {
 func (this *Area) ClearArea(s tcell.Screen) {
 	for x:=this.px;x<this.px+this.dx;x++ {
 		for y:=this.py;y<this.py+this.dy;y++ {
-			s.SetCell(x, y, tcell.StyleDefault, ' ')
+			s.SetContent(x, y, ' ', nil, tcell.StyleDefault)
 		}
 	}
 }
+
+func (this *Area) SetContent(s tcell.Screen, x int, y int, mainc rune, combc []rune, style tcell.Style) {
+	s.SetContent(x, y, mainc, combc, style)
+}
+
+func (this *Area) SetString(s tcell.Screen, x, y int, style tcell.Style, str string, width int) int {
+	for _, c := range str {
+		if c < ' ' {
+			c = ' '
+		}
+		var comb []rune
+		w := runewidth.RuneWidth(c)
+		if w == 0 {
+			comb = []rune{c}
+			c = ' '
+			w = 1
+		}
+		this.SetContent(s, x, y, c, comb, style)
+		x += w
+		width -= w
+		if width <= 0 {
+			break
+		}
+	}
+	for width > 0 {
+		this.SetContent(s, x, y, ' ', nil, style)
+		x++
+		width--
+	}
+	return x
+}
+
+func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, str string, width int) (int, int) {
+	x = this.SetString(s, x, y, style, str, width)
+	return x, y
+}
+
