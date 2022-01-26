@@ -110,14 +110,20 @@ func main() {
 				case tcell.KeyCtrlL:
 					s.Sync()
 				}
-			case *tcell.EventResize:
-				frames.EventHandler(s, event)
+			case *tcell.EventMouse:
+				if threads.IsEventIn(ev) {
+					threads.EventHandler(s, event)
+				} else if threads.IsEventIn(ev) {
+					mails.EventHandler(s, event)
+				} else if threads.IsEventIn(ev) {
+					query.EventHandler(s, event)
+				}
 			case *tcell.EventPaste:
 				query.EventHandler(s, event)
-			case *tcell.EventMouse:
-				threads.EventHandler(s, event) // TODO
-				mails.EventHandler(s, event)
-				query.EventHandler(s, event)
+			case *tcell.EventResize:
+				frames.EventHandler(s, event)
+			case *EventMainRefresh: // request to re-issue query
+				threads.EventHandler(s, event)
 			case *EventQuery: // query input reports new querystring -> threads
 				threads.EventHandler(s, event)
 			case *EventThreadsStatus: // threads report new thread list / stats -> status
@@ -154,6 +160,11 @@ func (this *Area) SetSize(px, py, dx, dy int) {
 	this.py = py
 	this.dx = dx
 	this.dy = dy
+}
+
+func (this *Area) IsEventIn(ev *tcell.EventMouse) bool {
+	x, y := ev.Position()
+	return this.px <= x && x < this.px + this.dx && this.py <= y && y < this.py + this.dy
 }
 
 func (this *Area) ClearArea(s tcell.Screen) {

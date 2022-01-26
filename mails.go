@@ -27,6 +27,12 @@ func NewMails(s tcell.Screen) (this Mails) {
 	return
 }
 
+const (
+	MAILS_OPEN = '▼'
+	MAILS_CLOSE = '▶'
+)
+
+
 // RuneULCorner = '┌' // RuneTTee  = '┬' // RuneURCorner = '┐'
 // RuneLTee     = '├' // RuneHLine = '─' // RuneRTee     = '┤'
 // RuneLLCorner = '└' // RuneBTee  = '┴' // RuneLRCorner = '┘'
@@ -46,6 +52,11 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, envelope, decry
 	style_frame := tcell.StyleDefault.Foreground(tcell.ColorLightGray)
 	y := 0
 	this.SetString(s, px, py+y, style_header, " " + envelope.Header("Subject"), w)
+	if show {
+		this.SetContent(s, px+w-1, py+y, MAILS_OPEN, nil, style_header)
+	} else {
+		this.SetContent(s, px+w-1, py+y, MAILS_CLOSE, nil, style_header)
+	}
 	y++
 	// from now of we have a RuneVLine, on the left, so text is indented
 	w-- // indent reduced width
@@ -76,6 +87,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, envelope, decry
 			}
 			this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
 			this.SetString(s, px+1, py+y, style, part.ContentType() + " " + part.Filename(), w)
+			this.SetContent(s, px+w-1, py+y, MAILS_CLOSE, nil, style)
 			y++
 			log.Printf("contentype=%s", part.ContentType())
 			if part.ContentType() == "message/rfc822" {
@@ -88,13 +100,14 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py, w, h int, envelope, decry
 				log.Printf("text=%s", part.Text())
 				if part.ContentType() == "text/plain" {
 					log.Printf("text=%s", part.Text())
+					this.SetContent(s, px+w-1, py+y-1, MAILS_OPEN, nil, style)
 					c := 0
 					for _, line := range strings.Split(part.Text(), "\n") {
 						this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
-						this.SetString(s, px+1, py+y, style, line, w)
+						this.SetParagraph(s, px+1, py+y, style, line, w)
 						y++
 						c++
-						if c > 7 {
+						if c > 30 {
 							break
 						}
 					}

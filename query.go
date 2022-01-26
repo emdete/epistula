@@ -8,15 +8,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-const (
-	QUERY_DEFAULT = "tag:nothing"
-	//QUERY_DEFAULT = "tag:inbox"
-	QUERY_PREFIX = "search "
-	QUERY_SUFFIX = " AND "
-)
-
-// Query
-// keys: Left Right chars enter tab
 type Query struct {
 	Area
 	pos_cur int
@@ -34,6 +25,13 @@ func NewQuery(s tcell.Screen) (this Query) {
 	this.notify(s)
 	return
 }
+
+const (
+	QUERY_DEFAULT = "tag:spam"
+	//QUERY_DEFAULT = "tag:inbox"
+	QUERY_PREFIX = "search "
+	QUERY_SUFFIX = " AND "
+)
 
 func (this *Query) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	this.SetString(s, px, py, tcell.StyleDefault, QUERY_PREFIX+this.query, w)

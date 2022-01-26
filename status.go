@@ -7,10 +7,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-const (
-	STATUS_TEMPLATE = "Filtered %d messages from %d threads out of a total of %d messages"
-)
-
 type Status struct {
 	Area
 	line string
@@ -22,6 +18,10 @@ func NewStatus(s tcell.Screen) (this Status) {
 	this.line = fmt.Sprintf(STATUS_TEMPLATE, 0, 0, 0)
 	return
 }
+
+const (
+	STATUS_TEMPLATE = "Filtered %d messages from %d threads out of a total of %d messages"
+)
 
 func (this *Status) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 	style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#cc7711")).Bold(true)
