@@ -23,27 +23,27 @@ func updateScreen(s tcell.Screen) {
 	w, h := s.Size()
 	if frames.dirty { // TODO or size changed
 		frames.SetSize(0, 0, w, h)
-		frames.Draw(s, 0, 0, w, h)
+		frames.Draw(s)
 		frames.dirty = false
 	}
 	if status.dirty {
 		status.SetSize(0, 0, w, 1)
-		status.Draw(s, 0, 0, w, 1)
+		status.Draw(s)
 		status.dirty = false
 	}
 	if query.dirty {
 		query.SetSize(0, 1, w, 1)
-		query.Draw(s, 0, 1, w, 1)
+		query.Draw(s)
 		query.dirty = false
 	}
 	if threads.dirty {
 		threads.SetSize(0, 3, frames.pos_vertical_bar, h-3)
-		threads.Draw(s, 0, 3, frames.pos_vertical_bar, h-3)
+		threads.Draw(s)
 		threads.dirty = false
 	}
 	if mails.dirty {
 		mails.SetSize(frames.pos_vertical_bar+1, 3, w-frames.pos_vertical_bar-1, h-3)
-		mails.Draw(s, frames.pos_vertical_bar+1, 3, w-frames.pos_vertical_bar-1, h-3)
+		mails.Draw(s)
 		mails.dirty = false
 	}
 	s.Show()
@@ -114,9 +114,9 @@ func main() {
 			case *tcell.EventMouse:
 				if threads.IsEventIn(ev) {
 					threads.EventHandler(s, event)
-				} else if threads.IsEventIn(ev) {
+				} else if mails.IsEventIn(ev) {
 					mails.EventHandler(s, event)
-				} else if threads.IsEventIn(ev) {
+				} else if query.IsEventIn(ev) {
 					query.EventHandler(s, event)
 				}
 			case *tcell.EventPaste:
@@ -177,7 +177,7 @@ func (this *Area) ClearArea(s tcell.Screen) {
 }
 
 func (this *Area) SetContent(s tcell.Screen, x int, y int, mainc rune, combc []rune, style tcell.Style) {
-	s.SetContent(x, y, mainc, combc, style)
+	s.SetContent(x+this.px, y+this.py, mainc, combc, style)
 }
 
 func (this *Area) SetString(s tcell.Screen, x, y int, style tcell.Style, str string, width int) int {
@@ -208,11 +208,11 @@ func (this *Area) SetString(s tcell.Screen, x, y int, style tcell.Style, str str
 }
 
 func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, str string, width int) (int, int) {
-	if false {
+	if true {
 		px := x
 		pwidth := width
 		for _, word := range strings.Split(str, " ") {
-			if px + len(word) > pwidth {
+			if len(word) > pwidth {
 				px = this.SetString(s, px, y, style, "", pwidth)
 				y++
 				px = x

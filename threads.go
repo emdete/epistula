@@ -15,10 +15,6 @@ type Threads struct {
 	filtered_t int
 	threadEntries [100](*ThreadEntry)
 	offset int
-	area_height int
-	area_width int
-	area_px int
-	area_py int
 	selected_index int
 }
 
@@ -31,11 +27,7 @@ func NewThreads(s tcell.Screen) (this Threads) {
 func (this *Threads) Close() {
 }
 
-func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	this.area_height = h
-	this.area_width = w
-	this.area_px = px
-	this.area_py = py
+func (this *Threads) Draw(s tcell.Screen) (ret bool) {
 	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#cc7711"))
 	for i, threadEntry := range this.threadEntries[this.offset:] {
 		//log.Printf("%d: %v", i, threadEntry)
@@ -48,11 +40,11 @@ func (this *Threads) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
 			cs2 = cs1.Bold(false).Foreground(tcell.GetColor("#999999"))
 		}
 		if threadEntry != nil {
-			this.SetString(s, px, py+i*2, cs1, "🙂 " + threadEntry.author, w)
-			this.SetString(s, px, py+i*2+1, cs2, threadEntry.subject, w)
+			this.SetString(s, 0, i*2, cs1, "🙂 " + threadEntry.author, this.dx)
+			this.SetString(s, 0, i*2+1, cs2, threadEntry.subject, this.dx)
 		} else {
-			this.SetString(s, px, py+i*2, tcell.StyleDefault, "", w)
-			this.SetString(s, px, py+i*2+1, tcell.StyleDefault, "", w)
+			this.SetString(s, 0, i*2, tcell.StyleDefault, "", this.dx)
+			this.SetString(s, 0, i*2+1, tcell.StyleDefault, "", this.dx)
 		}
 		i++
 	}
@@ -63,7 +55,7 @@ func (this *Threads) doDown(down bool) bool {
 	if down {
 		if this.selected_index+1 < this.filtered_t {
 			this.selected_index++
-			if this.selected_index-this.offset > this.area_height/2-2 {
+			if this.selected_index-this.offset > this.dy/2-2 {
 				this.offset++
 			}
 		}
@@ -104,21 +96,17 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 		}
 	case *tcell.EventMouse:
 		button := ev.Buttons()
-		x, y := ev.Position()
-		if x >= this.area_px && y >= this.area_py {
-			x -= this.area_px
-			y -= this.area_py
-			if x < this.area_width && y < this.area_height {
-				switch button {
-				case tcell.Button1:
-					this.selected_index = y/2 + this.offset
-					this.dirty = true
-				case tcell.WheelUp:
-					this.dirty = this.doDown(false)
-				case tcell.WheelDown:
-					this.dirty = this.doDown(true)
-				}
-			}
+		switch button {
+		case tcell.Button1:
+			x, y := ev.Position()
+			x -= this.px
+			y -= this.py
+			this.selected_index = y/2 + this.offset
+			this.dirty = true
+		case tcell.WheelUp:
+			this.dirty = this.doDown(false)
+		case tcell.WheelDown:
+			this.dirty = this.doDown(true)
 		}
 	case *EventQuery:
 		this.do_query(s, ev.query)

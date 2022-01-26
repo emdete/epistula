@@ -19,13 +19,13 @@ func NewFrames(s tcell.Screen, pos_vertical_bar int) (this Frames) {
 	return
 }
 
-func (this *Frames) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	this.pos_vertical_bar = w / 3
-	for x := 0; x < w; x++ {
+func (this *Frames) Draw(s tcell.Screen) (ret bool) {
+	this.pos_vertical_bar = this.dx / 3
+	for x := 0; x < this.dx; x++ {
 		this.SetContent(s, x, 2, tcell.RuneHLine, nil, tcell.StyleDefault)
 	}
 	this.SetContent(s, this.pos_vertical_bar, 2, tcell.RuneTTee, nil, tcell.StyleDefault)
-	for y := 3; y < h; y++ {
+	for y := 3; y < this.dy; y++ {
 		this.SetContent(s, this.pos_vertical_bar, y, tcell.RuneVLine, nil, tcell.StyleDefault)
 	}
 	return true

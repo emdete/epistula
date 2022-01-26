@@ -33,10 +33,10 @@ const (
 	QUERY_SUFFIX = " AND "
 )
 
-func (this *Query) Draw(s tcell.Screen, px, py, w, h int) (ret bool) {
-	this.SetString(s, px, py, tcell.StyleDefault, QUERY_PREFIX+this.query, w)
+func (this *Query) Draw(s tcell.Screen) (ret bool) {
+	this.SetString(s, 0, 0, tcell.StyleDefault, QUERY_PREFIX+this.query, this.dx)
 	// Cursor in query line
-	s.ShowCursor(px+len(QUERY_PREFIX)+this.pos_cur, py)
+	s.ShowCursor(this.px+len(QUERY_PREFIX)+this.pos_cur, this.py)
 	return true
 }
 
@@ -83,6 +83,20 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) {
 			this.pos_cur = len(QUERY_DEFAULT) + len(QUERY_SUFFIX)
 			this.query = QUERY_DEFAULT + QUERY_SUFFIX
 			this.dirty = true
+		}
+	case *tcell.EventMouse:
+		button := ev.Buttons()
+		switch button {
+		case tcell.Button1:
+			x, _ := ev.Position()
+			if x >= this.px + len(QUERY_PREFIX) {
+				x -= this.px + len(QUERY_PREFIX)
+				if x > len(this.query) {
+					x = len(this.query)
+				}
+				this.pos_cur = x
+				s.ShowCursor(this.px+len(QUERY_PREFIX)+this.pos_cur, this.py)
+			}
 		}
 	case *tcell.EventPaste:
 		this.pasting = ev.Start()
