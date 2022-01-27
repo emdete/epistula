@@ -53,30 +53,29 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 		style_normal = style_normal.Background(tcell.ColorDarkGray)
 	}
 	style_frame := tcell.StyleDefault.Foreground(tcell.ColorLightGray)
-	y := 0
 	w := this.dx
-	this.SetString(s, px, py+y, style_header, " " + envelope.Header("Subject"), w)
+	this.SetString(s, px, py, style_header, " " + envelope.Header("Subject"), w)
 	if show {
-		this.SetContent(s, px+w-1, py+y, MAILS_OPEN, nil, style_header)
+		this.SetContent(s, px+w-1, py, MAILS_OPEN, nil, style_header)
 	} else {
-		this.SetContent(s, px+w-1, py+y, MAILS_CLOSE, nil, style_header)
+		this.SetContent(s, px+w-1, py, MAILS_CLOSE, nil, style_header)
 	}
-	y++
+	py++
 	// from now of we have a RuneVLine, on the left, so text is indented
 	w-- // indent reduced width
-	this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
-	this.SetString(s, px+1, py+y, style_normal, envelope.Header("Date"), w)
-	y++
-	this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
-	this.SetString(s, px+1, py+y, style_normal, "From: " + envelope.Header("From"), w)
-	y++
-	this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
-	this.SetString(s, px+1, py+y, style_normal, "To: " + envelope.Header("To"), w)
-	y++
+	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
+	this.SetString(s, px+1, py, style_normal, envelope.Header("Date"), w)
+	py++
+	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
+	this.SetString(s, px+1, py, style_normal, "From: " + envelope.Header("From"), w)
+	py++
+	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
+	this.SetString(s, px+1, py, style_normal, "To: " + envelope.Header("To"), w)
+	py++
 	if envelope.Header("CC") != "" {
-		this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
-		this.SetString(s, px+1, py+y, style_normal, "CC: " + envelope.Header("CC"), w)
-		y++
+		this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
+		this.SetString(s, px+1, py, style_normal, "CC: " + envelope.Header("CC"), w)
+		py++
 	}
 	if decrypted != nil {
 		envelope = decrypted
@@ -89,44 +88,34 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 			if even {
 				style = style_normal_dim
 			}
-			this.SetContent(s, px, py+y, tcell.RuneVLine, nil, style_frame)
-			this.SetString(s, px+1, py+y, style, part.ContentType() + " " + part.Filename(), w)
-			this.SetContent(s, px+w-1, py+y, MAILS_CLOSE, nil, style)
-			y++
-			log.Printf("contentype=%s", part.ContentType())
-			if part.ContentType() == "message/rfc822" {
-				if envlp, err := gmime.Parse(part.Text()); err != nil {
-					log.Printf("inner message parsing error=%s", err)
-				} else {
-					log.Printf("inner from=%s", envlp.Header("From"))
-				}
-			} else if part.IsText() {
-				//log.Printf("text=%s", part.Text())
-				if part.ContentType() == "text/plain" {
-					this.SetContent(s, px+w-1, py+y-1, MAILS_OPEN, nil, style)
-					c := 0
-					paragraphprefix := ""
-					lastparagraphempty := true
-					for _, paragraph := range strings.Split(part.Text(), "\n") {
-						oy := y
-						paragraph = strings.TrimSpace(paragraph)
-						if !lastparagraphempty || len(paragraph) > 0 {
-							_, y = this.SetParagraph(s, px+1, py+y, style, paragraphprefix, paragraph, w)
-							for oy < y {
-								this.SetContent(s, px, py+oy, tcell.RuneVLine, nil, style_frame)
-								oy++
-							}
-						}
-						lastparagraphempty = len(paragraph) == 0
-						c++
-						if c > 12 {
-							this.SetContent(s, px+w-1, py+y-1, MAILS_MORE, nil, style)
-							break
+			this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
+			this.SetString(s, px+1, py, style, part.ContentType() + " " + part.Filename(), w)
+			this.SetContent(s, px+w-1, py, MAILS_CLOSE, nil, style)
+			py++
+			//if part.ContentType() == "message/rfc822" { if envlp, err := gmime.Parse(part.Text()); err != nil {}}
+			//if part.IsAttachment() {}
+			if part.IsText() && part.ContentType() == "text/plain" {
+				this.SetContent(s, px+w-1, py-1, MAILS_OPEN, nil, style)
+				c := 0
+				paragraphprefix := ""
+				lastparagraphempty := true
+				for _, paragraph := range strings.Split(part.Text(), "\n") {
+					oy := py
+					paragraph = strings.TrimSpace(paragraph)
+					if !lastparagraphempty || len(paragraph) > 0 {
+						_, py = this.SetParagraph(s, px+1, py, style, paragraphprefix, paragraph, w)
+						for oy < py {
+							this.SetContent(s, px, oy, tcell.RuneVLine, nil, style_frame)
+							oy++
 						}
 					}
+					lastparagraphempty = len(paragraph) == 0
+					c++
+					if c > 12 {
+						this.SetContent(s, px+w-1, py-1, MAILS_MORE, nil, style)
+						break
+					}
 				}
-			} else if part.IsAttachment() {
-				log.Printf("attachment filename=%s", part.Filename())
 			}
 			even = !even
 			return nil
@@ -134,9 +123,8 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 			panic(nil)
 		}
 	}
-	this.SetContent(s, px, py+y, tcell.RuneLLCorner, nil, style_frame)
-	y++
-	return y
+	this.SetContent(s, px, py, tcell.RuneLLCorner, nil, style_frame)
+	return py
 }
 
 func (this *Mails) Draw(s tcell.Screen) (ret bool) {
@@ -144,7 +132,6 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 	if this.id == "" {
 		return true
 	}
-	log.Printf("Mails.Draw '%v'", this.id)
 	if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadOnly); err != nil {
 		panic(err)
 	} else {
@@ -155,41 +142,41 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 			return
 		}
 		if threads, err := query.Threads(); err != nil {
-			log.Printf("Mails: thread id=%s not found", this.id)
+			log.Printf("Mails.Draw thread id=%s not found", this.id)
 			return
 		} else {
 			var thread *notmuch.Thread
-			for threads.Next(&thread) {
+			if threads.Next(&thread) {
 				defer thread.Close()
-				message := &notmuch.Message{}
-				messages := thread.Messages()
+				messages := thread.TopLevelMessages()
 				show := true
-				px := 0
-				dx := 0
-				py := 0
-				for messages.Next(&message) {
-					defer message.Close()
-					envelope := parseMessage(message)
-					defer envelope.Close()
-					isencrypted := MessageHasTag(message, "encrypted")
-					py += this.drawMessage(s, px, py, envelope, decryptMessage(message, show && isencrypted), isencrypted, show)
-					py-- // put subject right of the RuneLLCorner, last line of last message
-					px++ // indent next
-					dx-- // indent reduces width
-					if false { // TODO core
-						if replies, err := message.Replies(); err != nil {
-							log.Printf("error %v on getting replies", err)
-						} else {
-							defer replies.Close()
-							reply := &notmuch.Message{}
-							for replies.Next(&reply) {
-								defer reply.Close()
-
-							}
+				var recurse func (messages *notmuch.Messages, px, py int) int
+				recurse = func (messages *notmuch.Messages, px, py int) int {
+					message := &notmuch.Message{}
+					for messages.Next(&message) {
+						defer message.Close()
+						{
+							envelope := parseMessage(message)
+							defer envelope.Close()
+							isencrypted := MessageHasTag(message, "encrypted")
+							py = this.drawMessage(s, px, py, envelope, decryptMessage(message, show && isencrypted), isencrypted, show)
 						}
+						if replies, err := message.Replies(); err == nil {
+							defer replies.Close()
+							// put subject right of the RuneLLCorner, last line of last message
+							// indent next
+							py = recurse(replies, px+1, py)
+						}
+						show = false
 					}
-					show = false
+					return py
 				}
+				recurse(messages, 0, 0)
+			} else {
+				log.Printf("Mails.Draw not found: %s", this.id)
+			}
+			if threads.Next(&thread) {
+				log.Printf("Mails.Draw not uniq: %s", this.id)
 			}
 		}
 	}
@@ -205,32 +192,6 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 	}
 }
 
-func (this *Mails) hasAdressKey(address string) bool {
-	if context, err := gpgme.New(); err != nil {
-		log.Printf("error %v on getting context", err)
-	} else {
-		defer context.Release()
-		if keys, err := gpgme.FindKeys(address, false); err != nil {
-			log.Printf("error %v on finding keys for %s", err, address)
-		} else {
-			for _, key := range keys {
-				userID := key.UserIDs()
-				for userID != nil {
-					log.Printf("userid email=%v, name=%v, comment=%v", userID.Email(), userID.Name(), userID.Comment())
-					userID = userID.Next()
-				}
-				subKey := key.SubKeys()
-				for subKey != nil {
-					log.Printf("\tsubkey id=%v fp=%v", subKey.KeyID(), subKey.Fingerprint())
-					subKey = subKey.Next()
-				}
-			}
-			return true
-		}
-	}
-	return false
-}
-
 func parseMessage(message *notmuch.Message) *gmime.Envelope {
 	if fh, err := os.Open(message.Filename()); err != nil {
 		panic(err)
@@ -242,14 +203,6 @@ func parseMessage(message *notmuch.Message) *gmime.Envelope {
 			if envelope, err := gmime.Parse(string(data)); err != nil {
 				panic(err)
 			} else {
-				/*
-				defer envelope.Close()
-				if b, err := envelope.Export(); err != nil {
-					log.Printf("%v\n", err)
-				} else {
-					log.Printf("%v\n", b)
-				}
-				*/
 				return envelope
 			}
 		}

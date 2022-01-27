@@ -217,29 +217,23 @@ func (this *Area) SetString(s tcell.Screen, x, y int, style tcell.Style, str str
 }
 
 func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, paragraphprefix, paragraph string, width int) (int, int) {
-	if true {
-		px := 0
-		for _, word := range strings.Split(paragraph, " ") {
-			if len(word) > 0 { // remove double space
-				if px + len(word) > width {
-					this.SetString(s, x+px, y, style, "", width-px)
-					y++
-					px = 0
-				}
-				if px == 0 {
-					px += this.SetString(s, x+px, y, style, paragraphprefix, len(paragraphprefix))
-				}
-				// if len(word) > width // TODO
-				px += this.SetString(s, x+px, y, style, word, len(word)+1)
+	px := 0
+	for _, word := range strings.Split(paragraph, " ") {
+		if len(word) > 0 { // remove double space
+			if px + len(word) > width {
+				this.SetString(s, x+px, y, style, "", width-px) // wipe rest of line
+				y++
+				px = 0
 			}
+			if px == 0 { // put prefix
+				px += this.SetString(s, x+px, y, style, paragraphprefix, len(paragraphprefix))
+			}
+			// if len(word) > width // TODO
+			px += this.SetString(s, x+px, y, style, word, len(word)+1)
 		}
-		this.SetString(s, x+px, y, style, "", width+px)
-		y++
-	} else {
-		this.SetString(s, x, y, style, paragraph, width)
-		y++
 	}
-	log.Printf("SetParagraph y=%d '%s'", y, paragraph)
+	this.SetString(s, x+px, y, style, "", width+px)
+	y++
 	return x, y
 }
 
