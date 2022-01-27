@@ -1,4 +1,4 @@
-module emdete.de/go/goui
+module emdete.de/go/epistula
 
 go 1.17
 

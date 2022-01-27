@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"fmt"
 	"time"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
@@ -10,12 +11,13 @@ import (
 )
 
 type Threads struct {
-	Area
-	last_query string
-	filtered_t int
-	threadEntries [100](*ThreadEntry)
-	offset int
-	selected_index int
+	Area // where do we write
+	last_query string // what was the last query (to not repeat it unnesesarily)
+	filtered_t int // how many threads where found by notmuch
+	threadEntries [100](*ThreadEntry) // list of found threads // TODO add dynamic+pageing
+	offset int // offset into the list, whats on top
+	selected_index int // which thread is selected
+	refresh bool // do we refresh even if the query did not change
 }
 
 func NewThreads(s tcell.Screen) (this Threads) {
@@ -26,6 +28,7 @@ func NewThreads(s tcell.Screen) (this Threads) {
 
 const (
 	THREADS_PAGE = 13
+	THREADS_ATTACHMENT = 0x1F4CE
 )
 
 func (this *Threads) Close() {
@@ -53,9 +56,15 @@ func (this *Threads) Draw(s tcell.Screen) (ret bool) {
 			}
 			this.SetString(s, 0, i*2, cs1, "🙂 " + threadEntry.author, dx)
 			this.SetString(s, 0, i*2+1, cs2, threadEntry.subject, dx)
+			var ts string
 			if threadEntry.attachment {
-				this.SetContent(s, this.dx-4, i*2, 0x1F4CE, nil, cs1)
+				ts = fmt.Sprintf("%c [%d]", THREADS_ATTACHMENT, threadEntry.count)
+				dx = this.dx - len(ts)
+			} else {
+				ts = fmt.Sprintf("[%d]", threadEntry.count)
+				dx = this.dx - len(ts) - 2
 			}
+			this.SetString(s, dx, i*2, cs1, ts, this.dx - dx - 1)
 		} else {
 			this.SetString(s, 0, i*2, tcell.StyleDefault, "", this.dx-1)
 			this.SetString(s, 0, i*2+1, tcell.StyleDefault, "", this.dx-1)
@@ -132,7 +141,8 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 }
 
 func (this *Threads) do_query(s tcell.Screen, query string) {
-	if this.last_query != query {
+	log.Printf("Threads.do_query %v", query)
+	if this.last_query != query || this.refresh {
 		this.last_query = query
 		if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadOnly); err != nil {
 			panic(err)
@@ -270,17 +280,6 @@ func (this *Threads) notifyThreadsStatus(s tcell.Screen, overall_t, overall_m, f
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
-}
-
-func MessageHasTag(message *notmuch.Message, search string) bool {
-	tags := message.Tags()
-	var tag *notmuch.Tag
-	for tags.Next(&tag) {
-		if tag.Value == search {
-			return true
-		}
-	}
-	return false
 }
 
 func ThreadHasTag(thread *notmuch.Thread, search string) bool {

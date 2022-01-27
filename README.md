@@ -1,4 +1,4 @@
-[:]
+Epistula
 ==
 
 Itching
@@ -38,4 +38,9 @@ Preconditions
 While i was a big fan of rxvt i switched to gnome-terminal recently because it has better support for all the fancy stuff tcell supports like more colors, mouse reporting, double width characters and so on.
 
 I use the font Iosevka which gives proper, sharp letters and contains unicode special chars.
+
+Warning
+--
+
+This is POC code! It looks like spaghetti but that is intended as i am learning how i want my MUA to behave.
 

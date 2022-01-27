@@ -17,8 +17,10 @@ import (
 )
 
 type Mails struct {
-	Area
-	ThreadEntry
+	Area // where do we write
+	ThreadEntry // thread to show
+	selected_index_message int // which message is selected (default: first unread)
+	selected_index_part int // which part in that message is selected (default: first plain text)
 }
 
 func NewMails(s tcell.Screen) (this Mails) {
@@ -30,6 +32,7 @@ func NewMails(s tcell.Screen) (this Mails) {
 const (
 	MAILS_OPEN = '▼'
 	MAILS_CLOSE = '▶'
+	MAILS_MORE = '+'
 )
 
 
@@ -117,7 +120,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 						lastparagraphempty = len(paragraph) == 0
 						c++
 						if c > 12 {
-							this.SetContent(s, px+w-1, py+y-1, '+', nil, style)
+							this.SetContent(s, px+w-1, py+y-1, MAILS_MORE, nil, style)
 							break
 						}
 					}
@@ -278,3 +281,15 @@ func decryptMessage(message *notmuch.Message, decrypt bool) *gmime.Envelope {
 	}
 	return nil
 }
+
+func MessageHasTag(message *notmuch.Message, search string) bool {
+	tags := message.Tags()
+	var tag *notmuch.Tag
+	for tags.Next(&tag) {
+		if tag.Value == search {
+			return true
+		}
+	}
+	return false
+}
+
