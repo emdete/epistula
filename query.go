@@ -27,8 +27,7 @@ func NewQuery(s tcell.Screen) (this Query) {
 }
 
 const (
-	QUERY_DEFAULT = "tag:spam"
-	//QUERY_DEFAULT = "tag:inbox"
+	QUERY_DEFAULT = "tag:inbox"
 	QUERY_PREFIX = "search "
 	QUERY_SUFFIX = " AND "
 )
@@ -103,7 +102,17 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) {
 					x = len(this.query)
 				}
 				this.pos_cur = x
-				s.ShowCursor(this.px+len(QUERY_PREFIX)+this.pos_cur, this.py)
+				this.dirty = true
+			}
+		case tcell.WheelUp:
+			if this.pos_cur > 0 {
+				this.pos_cur--
+				this.dirty = true
+			}
+		case tcell.WheelDown:
+			if this.pos_cur < len(this.query) {
+				this.pos_cur++
+				this.dirty = true
 			}
 		}
 	case *tcell.EventPaste:

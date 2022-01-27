@@ -44,11 +44,18 @@ func (this *Threads) Draw(s tcell.Screen) (ret bool) {
 			cs2 = cs1.Bold(false).Foreground(tcell.GetColor("#999999"))
 		}
 		if threadEntry != nil {
-			this.SetString(s, 0, i*2, cs1, "🙂 " + threadEntry.author, this.dx)
-			this.SetString(s, 0, i*2+1, cs2, threadEntry.subject, this.dx)
+			dx := this.dx
+			if threadEntry.unread {
+				cs3 := tcell.StyleDefault.Reverse(true)
+				dx--
+				this.SetContent(s, dx, i*2, ' ', nil, cs3)
+				this.SetContent(s, dx, i*2+1, ' ', nil, cs3)
+			}
+			this.SetString(s, 0, i*2, cs1, "🙂 " + threadEntry.author, dx)
+			this.SetString(s, 0, i*2+1, cs2, threadEntry.subject, dx)
 		} else {
-			this.SetString(s, 0, i*2, tcell.StyleDefault, "", this.dx)
-			this.SetString(s, 0, i*2+1, tcell.StyleDefault, "", this.dx)
+			this.SetString(s, 0, i*2, tcell.StyleDefault, "", this.dx-1)
+			this.SetString(s, 0, i*2+1, tcell.StyleDefault, "", this.dx-1)
 		}
 		i++
 	}
@@ -185,6 +192,7 @@ type ThreadEntry struct {
 	id string
 	author string
 	subject string
+	unread bool
 	count int
 	newest time.Time
 }
@@ -202,6 +210,7 @@ func newThreadEntry(thread *notmuch.Thread) *ThreadEntry {
 		thread.ID(),
 		author,
 		thread.Subject(),
+		ThreadHasTag(thread, "unread"),
 		thread.Count(),
 		thread.NewestDate(),
 	}
@@ -261,6 +270,17 @@ func (this *Threads) notifyThreadsStatus(s tcell.Screen, overall_t, overall_m, f
 
 func MessageHasTag(message *notmuch.Message, search string) bool {
 	tags := message.Tags()
+	var tag *notmuch.Tag
+	for tags.Next(&tag) {
+		if tag.Value == search {
+			return true
+		}
+	}
+	return false
+}
+
+func ThreadHasTag(thread *notmuch.Thread, search string) bool {
+	tags := thread.Tags()
 	var tag *notmuch.Tag
 	for tags.Next(&tag) {
 		if tag.Value == search {

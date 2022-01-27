@@ -103,7 +103,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 					this.SetContent(s, px+w-1, py+y-1, MAILS_OPEN, nil, style)
 					c := 0
 					paragraphprefix := ""
-					lastparagraphempty := false
+					lastparagraphempty := true
 					for _, paragraph := range strings.Split(part.Text(), "\n") {
 						oy := y
 						paragraph = strings.TrimSpace(paragraph)

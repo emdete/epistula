@@ -21,27 +21,27 @@ var NotMuchDatabasePath string
 
 func updateScreen(s tcell.Screen) {
 	w, h := s.Size()
-	if frames.dirty { // TODO or size changed
+	if frames.dirty { // if frames.dirty a complete redraw is requested
 		frames.SetSize(0, 0, w, h)
 		frames.Draw(s)
 		frames.dirty = false
 	}
-	if status.dirty {
+	if frames.dirty || status.dirty {
 		status.SetSize(0, 0, w, 1)
 		status.Draw(s)
 		status.dirty = false
 	}
-	if query.dirty {
+	if frames.dirty || query.dirty {
 		query.SetSize(0, 1, w, 1)
 		query.Draw(s)
 		query.dirty = false
 	}
-	if threads.dirty {
+	if frames.dirty || threads.dirty {
 		threads.SetSize(0, 3, frames.pos_vertical_bar, h-3)
 		threads.Draw(s)
 		threads.dirty = false
 	}
-	if mails.dirty {
+	if frames.dirty || mails.dirty {
 		mails.SetSize(frames.pos_vertical_bar+1, 3, w-frames.pos_vertical_bar-1, h-3)
 		mails.Draw(s)
 		mails.dirty = false
