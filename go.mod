@@ -1,4 +1,4 @@
-module emdete.de/go/epistula
+module emdete.de/go/epistula-browser
 
 go 1.17
 
