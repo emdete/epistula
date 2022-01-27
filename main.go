@@ -12,6 +12,10 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
+const (
+	MAIN_MAILDIR = "Maildir"
+)
+
 var frames Frames
 var status Status
 var query Query
@@ -68,7 +72,7 @@ func main() {
 		if usr, err := user.Current(); err != nil {
 			panic(err)
 		} else {
-			NotMuchDatabasePath = filepath.Join(usr.HomeDir, "Maildir")
+			NotMuchDatabasePath = filepath.Join(usr.HomeDir, MAIN_MAILDIR)
 		}
 		if err := s.Init(); err != nil {
 			panic(err)

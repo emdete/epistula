@@ -53,6 +53,9 @@ func (this *Threads) Draw(s tcell.Screen) (ret bool) {
 			}
 			this.SetString(s, 0, i*2, cs1, "🙂 " + threadEntry.author, dx)
 			this.SetString(s, 0, i*2+1, cs2, threadEntry.subject, dx)
+			if threadEntry.attachment {
+				this.SetContent(s, this.dx-4, i*2, 0x1F4CE, nil, cs1)
+			}
 		} else {
 			this.SetString(s, 0, i*2, tcell.StyleDefault, "", this.dx-1)
 			this.SetString(s, 0, i*2+1, tcell.StyleDefault, "", this.dx-1)
@@ -192,7 +195,7 @@ type ThreadEntry struct {
 	id string
 	author string
 	subject string
-	unread bool
+	unread, attachment bool
 	count int
 	newest time.Time
 }
@@ -211,6 +214,7 @@ func newThreadEntry(thread *notmuch.Thread) *ThreadEntry {
 		author,
 		thread.Subject(),
 		ThreadHasTag(thread, "unread"),
+		ThreadHasTag(thread, "attachment"),
 		thread.Count(),
 		thread.NewestDate(),
 	}

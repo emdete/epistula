@@ -32,3 +32,10 @@ I decided to use the components
 
 So mainly the project is just a driver for those fine libraries.
 
+Preconditions
+--
+
+While i was a big fan of rxvt i switched to gnome-terminal recently because it has better support for all the fancy stuff tcell supports like more colors, mouse reporting, double width characters and so on.
+
+I use the font Iosevka which gives proper, sharp letters and contains unicode special chars.
+
