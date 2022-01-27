@@ -32,6 +32,8 @@ I decided to use the components
 
 So mainly the project is just a driver for those fine libraries.
 
+!(Screenshot)[screenshot.png]
+
 Preconditions
 --
 
