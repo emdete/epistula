@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"os/user"
+	"os/exec"
 	"path/filepath"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
@@ -109,11 +110,14 @@ func main() {
 					mails.EventHandler(s, event)
 				case tcell.KeyEscape:
 					running = false
+				case tcell.KeyCtrlC:
+					compose()
 				case tcell.KeyCtrlR:
-					notifyRefresh(s)
+					reply()
 				case tcell.KeyCtrlB:
 					s.Beep()
 				case tcell.KeyCtrlL:
+					notifyRefresh(s)
 					s.Sync()
 				}
 			case *tcell.EventMouse:
@@ -139,6 +143,20 @@ func main() {
 			}
 		}
 	}
+}
+
+func compose() {
+}
+
+func reply() {
+	cwd,_ := os.Getwd()
+	cmd := exec.Command("gnome-terminal",
+		"--wait",
+		"--hide-menubar",
+		"--working-directory=" + cwd,
+		"--",
+		"../composer/epistula-composer")
+	go cmd.Run()
 }
 
 // event telling to refresh the threads cause mails arrived / db changed
