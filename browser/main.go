@@ -113,7 +113,9 @@ func main() {
 				case tcell.KeyCtrlC:
 					compose()
 				case tcell.KeyCtrlR:
-					reply()
+					if mailfilename := mails.GetSelectedMailFilename(); mailfilename != "" {
+						reply(mailfilename)
+					}
 				case tcell.KeyCtrlB:
 					s.Beep()
 				case tcell.KeyCtrlL:
@@ -146,9 +148,6 @@ func main() {
 }
 
 func compose() {
-}
-
-func reply() {
 	cwd,_ := os.Getwd()
 	cmd := exec.Command("gnome-terminal",
 		"--wait",
@@ -156,6 +155,19 @@ func reply() {
 		"--working-directory=" + cwd,
 		"--",
 		"../composer/epistula-composer")
+	go cmd.Run()
+}
+
+func reply(mailfilename string) {
+	log.Printf("reply %s", mailfilename)
+	cwd,_ := os.Getwd()
+	cmd := exec.Command("gnome-terminal",
+		"--wait",
+		"--hide-menubar",
+		"--working-directory=" + cwd,
+		"--",
+		"../composer/epistula-composer",
+		mailfilename)
 	go cmd.Run()
 }
 

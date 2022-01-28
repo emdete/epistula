@@ -49,7 +49,9 @@ func main() {
 	// - composes an email via gmime
 	// - exports it to a temp file
 	// - execs the editor and waits for its termination
-	return
+	if envelope != nil {
+		envelope.Subject()
+	}
 	programname := "nvim"
 	if programname, err := exec.LookPath(programname); err == nil {
 		var procAttr os.ProcAttr

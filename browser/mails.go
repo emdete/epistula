@@ -50,6 +50,7 @@ type IntPair struct {
 
 func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *gmime.Envelope, index_message int, isencrypted, show bool) int {
 	style_normal := tcell.StyleDefault.Background(tcell.ColorLightGray)
+	selected_style := tcell.StyleDefault.Background(tcell.GetColor("#eeeeee"))
 	if isencrypted {
 		style_normal = style_normal.Foreground(tcell.ColorDarkGreen)
 	} else {
@@ -64,6 +65,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 	this.SetString(s, px, py, style_header, " " + envelope.Header("Subject"), w)
 	if show {
 		this.SetContent(s, px+w-2, py, MAILS_OPEN, nil, style_header)
+		this.SetContent(s, px+w-1, py, ' ', nil, selected_style)
 	} else {
 		this.SetContent(s, px+w-2, py, MAILS_CLOSE, nil, style_header)
 	}
@@ -73,16 +75,20 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 	w-- // indent reduced width
 	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 	this.SetString(s, px+1, py, style_normal, envelope.Header("Date"), w)
+	if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 	py++
 	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 	this.SetString(s, px+1, py, style_normal, "From: " + envelope.Header("From"), w)
+	if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 	py++
 	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 	this.SetString(s, px+1, py, style_normal, "To: " + envelope.Header("To"), w)
+	if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 	py++
 	if envelope.Header("CC") != "" {
 		this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 		this.SetString(s, px+1, py, style_normal, "CC: " + envelope.Header("CC"), w)
+		if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 		py++
 	}
 	if decrypted != nil {
@@ -101,6 +107,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 			this.SetString(s, px+1, py, style, part.ContentType() + " " + part.Filename(), w)
 			this.SetContent(s, px+w-1, py, MAILS_CLOSE, nil, style)
 			this.cache[IntPair{px+w-1,py}] = IntPair{index_message,index_message_part}
+			if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 			py++
 			//if part.ContentType() == "message/rfc822" { if envlp, err := gmime.Parse(part.Text()); err != nil {}}
 			//if part.IsAttachment() {}
@@ -116,6 +123,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 						_, py = this.SetParagraph(s, px+1, py, style, paragraphprefix, paragraph, w)
 						for oy < py {
 							this.SetContent(s, px, oy, tcell.RuneVLine, nil, style_frame)
+							if show { this.SetContent(s, px+w, oy, ' ', nil, selected_style) }
 							oy++
 						}
 					}
@@ -202,6 +210,9 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 	case *EventThreadsThread:
 		this.ThreadEntry = ev.ThreadEntry
 		this.paged_y = 0
+		this.selected_index_message = 0
+		this.selected_index_part = 0
+		this.cache = make(map[IntPair]IntPair)
 		this.dirty = true
 	case *tcell.EventKey:
 		switch ev.Key() {
@@ -240,6 +251,57 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		}
 	}
 	log.Printf("Mails.EventHandler %#v", this)
+}
+
+func (this *Mails) GetSelectedMailFilename() string {
+	if this.id == "" {
+		return ""
+	}
+	if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadOnly); err != nil {
+		return ""
+	} else {
+		defer db.Close()
+		query := db.NewQuery(this.id)
+		defer query.Close()
+		if 1 != query.CountThreads() {
+			return ""
+		}
+		if threads, err := query.Threads(); err != nil {
+			return ""
+		} else {
+			var thread *notmuch.Thread
+			if threads.Next(&thread) {
+				defer thread.Close()
+				index_message := 0
+				var recurse func (messages *notmuch.Messages) string
+				recurse = func (messages *notmuch.Messages) string {
+					message := &notmuch.Message{}
+					for messages.Next(&message) {
+						defer message.Close()
+						if this.selected_index_message == index_message {
+							return message.Filename()
+						}
+						index_message++
+						if replies, err := message.Replies(); err == nil {
+							defer replies.Close()
+							n := recurse(replies)
+							if n != "" {
+								return n
+							}
+						}
+					}
+					return ""
+				}
+				return recurse(thread.TopLevelMessages())
+			} else {
+				return ""
+			}
+			if threads.Next(&thread) {
+				return ""
+			}
+		}
+	}
+	return ""
 }
 
 func parseMessage(message *notmuch.Message) *gmime.Envelope {
