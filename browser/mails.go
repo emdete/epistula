@@ -19,8 +19,10 @@ import (
 type Mails struct {
 	Area // where do we write
 	ThreadEntry // thread to show
+	paged_y int // offset into mails
 	selected_index_message int // which message is selected (default: first unread)
 	selected_index_part int // which part in that message is selected (default: first plain text)
+	count_of_lines int
 }
 
 func NewMails(s tcell.Screen) (this Mails) {
@@ -53,7 +55,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 		style_normal = style_normal.Background(tcell.ColorDarkGray)
 	}
 	style_frame := tcell.StyleDefault.Foreground(tcell.ColorLightGray)
-	w := this.dx
+	w := this.dx - px
 	this.SetString(s, px, py, style_header, " " + envelope.Header("Subject"), w)
 	if show {
 		this.SetContent(s, px+w-1, py, MAILS_OPEN, nil, style_header)
@@ -171,7 +173,7 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 					}
 					return py
 				}
-				recurse(messages, 0, 0)
+				this.count_of_lines = recurse(messages, 0, -this.paged_y)+this.paged_y
 			} else {
 				log.Printf("Mails.Draw not found: %s", this.id)
 			}
@@ -184,12 +186,29 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 }
 
 func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
-	log.Printf("Mails.EventHandler %v", event)
+	log.Printf("Mails.EventHandler %#v", event)
 	switch ev := event.(type) {
 	case *EventThreadsThread:
 		this.ThreadEntry = ev.ThreadEntry
+		this.paged_y = 0
 		this.dirty = true
+	case *tcell.EventKey:
+		switch ev.Key() {
+		case tcell.KeyPgUp:
+			if this.paged_y > this.dy-1 {
+				this.paged_y -= this.dy - 1
+			} else {
+				this.paged_y = 0
+			}
+			this.dirty = true
+		case tcell.KeyPgDn:
+			if this.paged_y + this.dy < this.count_of_lines {
+				this.paged_y += this.dy - 1
+				this.dirty = true
+			}
+		}
 	}
+	log.Printf("Mails.EventHandler %#v", this)
 }
 
 func parseMessage(message *notmuch.Message) *gmime.Envelope {

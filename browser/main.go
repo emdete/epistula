@@ -181,7 +181,7 @@ func (this *Area) ClearArea(s tcell.Screen) {
 }
 
 func (this *Area) SetContent(s tcell.Screen, x int, y int, mainc rune, combc []rune, style tcell.Style) {
-	if x < this.dx && y < this.dy {
+	if x >= 0 && x < this.dx && y >= 0 && y < this.dy {
 		s.SetContent(x+this.px, y+this.py, mainc, combc, style)
 	} else {
 		//log.Printf("SetContent off screen %#v x=%d y=%d %c", this, x, y, mainc)
