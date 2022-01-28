@@ -23,11 +23,13 @@ type Mails struct {
 	selected_index_message int // which message is selected (default: first unread)
 	selected_index_part int // which part in that message is selected (default: first plain text)
 	count_of_lines int
+	cache map[IntPair]IntPair // cache of positions of open/close controls
 }
 
 func NewMails(s tcell.Screen) (this Mails) {
 	log.Printf("NewMails")
 	this = Mails{}
+	this.cache = make(map[IntPair]IntPair)
 	return
 }
 
@@ -37,13 +39,16 @@ const (
 	MAILS_MORE = '+'
 )
 
+type IntPair struct {
+	a,b int
+}
 
 // RuneULCorner = '┌' // RuneTTee  = '┬' // RuneURCorner = '┐'
 // RuneLTee     = '├' // RuneHLine = '─' // RuneRTee     = '┤'
 // RuneLLCorner = '└' // RuneBTee  = '┴' // RuneLRCorner = '┘'
 // RuneVLine =    '│' 
 
-func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *gmime.Envelope, isencrypted, show bool) int {
+func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *gmime.Envelope, index_message int, isencrypted, show bool) int {
 	style_normal := tcell.StyleDefault.Background(tcell.ColorLightGray)
 	if isencrypted {
 		style_normal = style_normal.Foreground(tcell.ColorDarkGreen)
@@ -58,12 +63,13 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 	w := this.dx - px
 	this.SetString(s, px, py, style_header, " " + envelope.Header("Subject"), w)
 	if show {
-		this.SetContent(s, px+w-1, py, MAILS_OPEN, nil, style_header)
+		this.SetContent(s, px+w-2, py, MAILS_OPEN, nil, style_header)
 	} else {
-		this.SetContent(s, px+w-1, py, MAILS_CLOSE, nil, style_header)
+		this.SetContent(s, px+w-2, py, MAILS_CLOSE, nil, style_header)
 	}
+	this.cache[IntPair{px+w-2,py}] = IntPair{index_message,-1}
 	py++
-	// from now of we have a RuneVLine, on the left, so text is indented
+	// from now on we have a RuneVLine, on the left, so text is indented
 	w-- // indent reduced width
 	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 	this.SetString(s, px+1, py, style_normal, envelope.Header("Date"), w)
@@ -85,6 +91,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 	if show {
 		even := true
 		style_normal_dim := style_normal.Background(tcell.ColorDarkGray)
+		index_message_part := 0
 		if err := envelope.Walk(func (part *gmime.Part) error {
 			style := style_normal
 			if even {
@@ -93,6 +100,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 			this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 			this.SetString(s, px+1, py, style, part.ContentType() + " " + part.Filename(), w)
 			this.SetContent(s, px+w-1, py, MAILS_CLOSE, nil, style)
+			this.cache[IntPair{px+w-1,py}] = IntPair{index_message,index_message_part}
 			py++
 			//if part.ContentType() == "message/rfc822" { if envlp, err := gmime.Parse(part.Text()); err != nil {}}
 			//if part.IsAttachment() {}
@@ -115,11 +123,13 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 					c++
 					if c > 12 {
 						this.SetContent(s, px+w-1, py-1, MAILS_MORE, nil, style)
+						this.cache[IntPair{px+w-1,py}] = IntPair{index_message,-index_message_part}
 						break
 					}
 				}
 			}
 			even = !even
+			index_message_part++
 			return nil
 		}); err != nil {
 			panic(nil)
@@ -151,7 +161,7 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 			if threads.Next(&thread) {
 				defer thread.Close()
 				messages := thread.TopLevelMessages()
-				show := true
+				index_message := 0
 				var recurse func (messages *notmuch.Messages, px, py int) int
 				recurse = func (messages *notmuch.Messages, px, py int) int {
 					message := &notmuch.Message{}
@@ -161,15 +171,16 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 							envelope := parseMessage(message)
 							defer envelope.Close()
 							isencrypted := MessageHasTag(message, "encrypted")
-							py = this.drawMessage(s, px, py, envelope, decryptMessage(message, show && isencrypted), isencrypted, show)
+							show := index_message == this.selected_index_message
+							py = this.drawMessage(s, px, py, envelope, decryptMessage(message, show && isencrypted), index_message, isencrypted, show)
 						}
+						index_message++
 						if replies, err := message.Replies(); err == nil {
 							defer replies.Close()
 							// put subject right of the RuneLLCorner, last line of last message
 							// indent next
 							py = recurse(replies, px+1, py)
 						}
-						show = false
 					}
 					return py
 				}
@@ -206,6 +217,26 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 				this.paged_y += this.dy - 1
 				this.dirty = true
 			}
+		}
+	case *tcell.EventMouse:
+		button := ev.Buttons()
+		switch button {
+		case tcell.Button1:
+			x, y := ev.Position()
+			x -= this.px
+			y -= this.py
+			if m, found := this.cache[IntPair{x, y}]; found {
+				log.Printf("x=%d, y=%d, m=%v:%#v", x, y, found, m)
+				this.selected_index_message = m.a
+				this.selected_index_part = m.b
+				this.dirty = true
+			}
+		case tcell.WheelUp:
+			this.paged_y--
+			this.dirty = true
+		case tcell.WheelDown:
+			this.paged_y++
+			this.dirty = true
 		}
 	}
 	log.Printf("Mails.EventHandler %#v", this)
