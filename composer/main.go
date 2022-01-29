@@ -3,12 +3,14 @@ package main
 import (
 	"log"
 	"os"
+	"io"
 	"strings"
 	"os/exec"
 	"io/ioutil"
 	"bufio"
 	//
 	"github.com/sendgrid/go-gmime/gmime"
+	"github.com/proglottis/gpgme"
 )
 
 const (
@@ -31,6 +33,8 @@ func main() {
 	case 2:
 		// we reply to the given email
 		envelope = parseFile(os.Args[1]) // TODO for now it excepts a name to reply to only
+		if strings.HasPrefix(envelope.Header("Content-Type"), "multipart/encrypted; ") {
+		}
 	default:
 		panic("wrongs arguments")
 	}
@@ -152,6 +156,24 @@ func main() {
 func parseFile(filename string) *gmime.Envelope {
 	if fh, err := os.Open(filename); err != nil {
 		panic(err)
+	} else {
+		defer fh.Close()
+		if data, err := ioutil.ReadAll(bufio.NewReader(fh)); err != nil {
+			panic(err)
+		} else {
+			if envelope, err := gmime.Parse(string(data)); err != nil {
+				panic(err)
+			} else {
+				return envelope
+			}
+		}
+	}
+	return nil
+}
+
+func decryptMessage(stream io.Reader) *gmime.Envelope {
+	if fh, err := gpgme.Decrypt(stream); err != nil {
+		log.Printf("decryptMessage error %v", err)
 	} else {
 		defer fh.Close()
 		if data, err := ioutil.ReadAll(bufio.NewReader(fh)); err != nil {
