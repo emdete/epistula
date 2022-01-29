@@ -17,11 +17,13 @@ Decisions
 
 I need four areas: an area to show a mail thread, an area to list the mail threads, an area to enter a query term, an area to show some status information.
 
-I code in Go.
+I code in [Go](https://pkg.go.dev/).
 
 I decided to have no focus control over widgets. the keys tell, which area will use them. page up/down navigates emails, cursor up/down navigates thread list, cursor left/right and chars work on the query term (more keys to come). Mouse clicks will routed by area.
 
 I decided to have no fancy model view controler stuff or the like. no layout manager, just hardcoded positions. visualisation merges with function, no widget abstraction. everything is based on putting chars or strings onto the screen.
+
+The program is consequently using PGP.
 
 I decided to use the components
 
@@ -37,11 +39,11 @@ So mainly the project is just a driver for those fine libraries.
 Preconditions
 --
 
-While i was a big fan of rxvt i switched to gnome-terminal recently because it has better support for all the fancy stuff tcell supports like more colors, mouse reporting, double width characters and so on. Editing mails will start another terminal which is gnome-terminal. This is hardcoded for now.
+While i was a big fan of rxvt i switched to [gnome-terminal](https://wiki.gnome.org/Apps/Terminal) recently because it has better support for all the fancy stuff tcell supports like more colors, mouse reporting, double width characters and so on. Editing mails will start another terminal which is gnome-terminal. This is hardcoded for now.
 
-I use [NeoVim] for editing. This is hardcoded for now.
+I use [NeoVim](https://neovim.org/) for editing. This is hardcoded for now.
 
-I use the font Iosevka which gives proper, sharp letters and contains unicode special chars.
+I use the font [Iosevka](https://github.com/be5invis/Iosevka/) which gives proper, sharp letters and contains unicode special chars.
 
 Build
 --
