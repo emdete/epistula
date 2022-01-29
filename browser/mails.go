@@ -20,6 +20,7 @@ type Mails struct {
 	Area // where do we write
 	ThreadEntry // thread to show
 	paged_y int // offset into mails
+	textlinelimit int // count of lines of text initially shown
 	selected_index_message int // which message is selected (default: first unread)
 	selected_index_part int // which part in that message is selected (default: first plain text)
 	count_of_lines int
@@ -37,6 +38,7 @@ const (
 	MAILS_OPEN = '▼'
 	MAILS_CLOSE = '▶'
 	MAILS_MORE = '+'
+	MAILS_TEXTLINELIMIT = 12
 )
 
 type IntPair struct {
@@ -113,7 +115,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 			//if part.IsAttachment() {}
 			if part.IsText() && part.ContentType() == "text/plain" {
 				this.SetContent(s, px+w-1, py-1, MAILS_OPEN, nil, style)
-				c := 0
+				textline := 0
 				paragraphprefix := ""
 				lastparagraphempty := true
 				for _, paragraph := range strings.Split(part.Text(), "\n") {
@@ -121,6 +123,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 					paragraph = strings.TrimSpace(paragraph)
 					if !lastparagraphempty || len(paragraph) > 0 {
 						_, py = this.SetParagraph(s, px+1, py, style, paragraphprefix, paragraph, w)
+						textline += py-oy
 						for oy < py {
 							this.SetContent(s, px, oy, tcell.RuneVLine, nil, style_frame)
 							if show { this.SetContent(s, px+w, oy, ' ', nil, selected_style) }
@@ -128,10 +131,9 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 						}
 					}
 					lastparagraphempty = len(paragraph) == 0
-					c++
-					if c > 12 {
+					if textline > this.textlinelimit {
 						this.SetContent(s, px+w-1, py-1, MAILS_MORE, nil, style)
-						this.cache[IntPair{px+w-1,py}] = IntPair{index_message,-index_message_part}
+						this.cache[IntPair{px+w-1,py-1}] = IntPair{index_message,-2}
 						break
 					}
 				}
@@ -211,6 +213,7 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		this.ThreadEntry = ev.ThreadEntry
 		this.paged_y = 0
 		this.selected_index_message = 0
+		this.textlinelimit = MAILS_TEXTLINELIMIT
 		this.selected_index_part = 0
 		this.cache = make(map[IntPair]IntPair)
 		this.dirty = true
@@ -238,13 +241,26 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 			y -= this.py
 			if m, found := this.cache[IntPair{x, y}]; found {
 				log.Printf("x=%d, y=%d, m=%v:%#v", x, y, found, m)
-				this.selected_index_message = m.a
-				this.selected_index_part = m.b
+				switch m.b {
+				case -2:
+					// unlimit text line count
+					this.textlinelimit += MAILS_TEXTLINELIMIT
+				case -1:
+					// select mail
+					this.selected_index_message = m.a
+					this.selected_index_part = 0
+				default:
+					// select, open part
+					this.selected_index_message = m.a
+					this.selected_index_part = m.b
+				}
 				this.dirty = true
 			}
 		case tcell.WheelUp:
-			this.paged_y--
-			this.dirty = true
+			if this.paged_y > 0 {
+				this.paged_y--
+				this.dirty = true
+			}
 		case tcell.WheelDown:
 			this.paged_y++
 			this.dirty = true
