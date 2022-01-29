@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 	"fmt"
 	"strings"
 	"os/exec"
@@ -15,6 +16,7 @@ import (
 
 const (
 	CRLF = "\r\n"
+	EDITOR = "nvim"
 )
 
 func main() {
@@ -31,6 +33,8 @@ func main() {
 			switch x[0] {
 			case "from":
 				meta_from = x[1]
+			case "from-name":
+				meta_from_name = x[1]
 			case "to":
 				meta_to = x[1]
 			case "cc":
@@ -42,7 +46,16 @@ func main() {
 			case "reply":
 				//
 			case "text":
-				content_text = x[1]
+				if fh, err := os.Open(x[1]); err != nil {
+					panic(err)
+				} else {
+					defer fh.Close()
+					if data, err := ioutil.ReadAll(bufio.NewReader(fh)); err != nil {
+						panic(err)
+					} else {
+						content_text = string(data)
+					}
+				}
 			default:
 				panic(fmt.Sprintf("wrong arg: %s", os.Args[i]))
 			}
@@ -53,25 +66,21 @@ func main() {
 	// - decrypt reply email
 	// - composes an email via gmime
 	var buffer []byte
+	date_string := time.Now().Format(time.RFC1123Z)
 	if message, err := gmime.Parse(
-		"Date: Fri, 28 Jan 2022 23:59:04 +0100" + CRLF +
+		"Date: " + date_string + CRLF +
 		"From: " + meta_from + CRLF +
-		"MIME-Version: 1.0" + CRLF +
-		"Content-Type: text/plain; charset=utf-8" + CRLF +
-		"Content-Transfer-Encoding: quoted-printable" + CRLF +
 		CRLF +
 		CRLF); err != nil {
 		panic(err)
 	} else {
-		// fields: from sender reply-to to cc bcc
+		message.ClearAddress("From")
 		message.AddAddress("From", meta_from_name, meta_from)
-		message.SetHeader("Content-Type", "text/plain")
-		message.ParseAndAppendAddresses("To", meta_to) // TODO how to add an empty "To:" ?
+		message.ParseAndAppendAddresses("To", meta_to) // TODO how to add an empty "To:", .. ?
 		message.ParseAndAppendAddresses("Cc", meta_cc)
 		message.ParseAndAppendAddresses("Bcc", meta_bcc)
 		message.SetSubject(meta_subject)
 		// Content-ID
-		// Content-Transfer-Encoding: quoted-printable
 		// Date: Thu, 13 Dec 2018 14:19:38 +0000
 		// In-Reply-To
 		// MIME-Version
@@ -79,11 +88,10 @@ func main() {
 		// References
 		// Return-Path
 		// Thread-Topic
-		message.SetHeader("User-Agent", "Epistula")
 		message.SetHeader("X-Epistula-State", "I am not done")
 		message.SetHeader("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the State to not contain 'not'.")
 		message.SetHeader("X-Epistula-Attachment", "#sample entry#")
-		content_text = strings.ReplaceAll(content_text, "\n", "\n> ")
+		content_text = "> " + strings.ReplaceAll(content_text, "\n", "\n> ")
 		if err := message.Walk(func (part *gmime.Part) error {
 			if part.IsText() && part.ContentType() == "text/plain" {
 				part.SetText(content_text)
@@ -91,6 +99,11 @@ func main() {
 			return nil
 		}); err != nil {
 			panic(err)
+		}
+		if b, err := message.Export(); err != nil {
+			panic(err)
+		} else {
+			buffer = b
 		}
 	}
 	// - exports it to a temp file
@@ -110,20 +123,37 @@ func main() {
 	defer os.Remove(tempfilename)
 	// - execs the editor and waits for its termination
 	//if true { return }
-	programname := "nvim"
-	if programname, err := exec.LookPath(programname); err == nil {
-		var procAttr os.ProcAttr
-		procAttr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}
-		if proc, err := os.StartProcess(programname, []string{programname, tempfilename}, &procAttr); err == nil {
-			proc.Wait()
+	var message *gmime.Envelope
+	done := false
+	for !done {
+		if EDITOR, err := exec.LookPath(EDITOR); err == nil {
+			var procAttr os.ProcAttr
+			procAttr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}
+			if proc, err := os.StartProcess(EDITOR, []string{EDITOR, "+", tempfilename}, &procAttr); err == nil {
+				proc.Wait()
+			}
 		}
-	}
 	// - parses the file via gmime
-	message := parseFile(tempfilename)
-	strings.Contains(message.Header("X-Epistula-Attachment"), "not")
+		message = parseFile(tempfilename)
+		done = !strings.Contains(message.Header("X-Epistula-Status"), "not")
+	}
+	message.SetHeader("MIME-Version", "1.0")
+	message.SetHeader("User-Agent", "Epistula")
+	message.SetHeader("Content-Type", "text/plain; charset=utf-8")
+	message.SetHeader("Content-Transfer-Encoding", "quoted-printable")
+	message.RemoveHeader("X-Epistula-Status")
+	message.RemoveHeader("X-Epistula-Comment")
+	message.RemoveHeader("X-Epistula-Attachment")
+	// TODO add attachment
 	// - retreives the desired keys
 	// - encrypts the file via gpgme
 	// - sends the email
+	if b, err := message.Export(); err != nil {
+		panic(err)
+	} else {
+		buffer = b
+	}
+	_ = []string{"sendmail", "-oem", "-oi", "-t", }[1]
 	//
 	// because the exported (for edit) email includes all meta data the program can add
 	// x-epistula-* meta data that "talks to the user", for example telling her
