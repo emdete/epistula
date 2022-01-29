@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"fmt"
 	"strings"
 	"os/user"
 	"os/exec"
@@ -24,6 +25,7 @@ var query Query
 var threads Threads
 var mails Mails
 var NotMuchDatabasePath string
+var from string
 
 func updateScreen(s tcell.Screen) {
 	w, h := s.Size()
@@ -65,6 +67,20 @@ func main() {
 	// log
 	_log()
 	log.Printf("main")
+	//
+	for i:=1;i<len(os.Args);i++ {
+		if strings.HasPrefix(os.Args[i], "--") {
+			x := strings.Split(os.Args[i][2:], "=")
+			switch x[0] {
+			case "from":
+				from = x[1]
+			default:
+				log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
+			}
+		} else {
+			log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
+		}
+	}
 	// tcell
 	encoding.Register()
 	if s, err := tcell.NewScreen(); err != nil {
@@ -154,7 +170,9 @@ func compose() {
 		"--hide-menubar",
 		"--working-directory=" + cwd,
 		"--",
-		"../composer/epistula-composer")
+		"../composer/epistula-composer",
+			"--from=" + from,
+		)
 	go cmd.Run()
 }
 
@@ -167,7 +185,14 @@ func reply(mailfilename string) {
 		"--working-directory=" + cwd,
 		"--",
 		"../composer/epistula-composer",
-		mailfilename)
+			"--from=",
+			"--reply",
+			"--text=",
+			"--to=",
+			"--subject=",
+			"--cc=",
+			"--bcc=",
+		)
 	go cmd.Run()
 }
 

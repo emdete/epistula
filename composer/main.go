@@ -49,23 +49,22 @@ func main() {
 				//
 			case "text":
 				if fh, err := os.Open(x[1]); err != nil {
-					panic(err)
+					log.Fatal(err)
 				} else {
 					defer fh.Close()
 					if data, err := ioutil.ReadAll(bufio.NewReader(fh)); err != nil {
-						panic(err)
+						log.Fatal(err)
 					} else {
 						content_text = string(data)
 					}
 				}
 			default:
-				panic(fmt.Sprintf("wrong arg: %s", os.Args[i]))
+				log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
 			}
 		} else {
-			panic(fmt.Sprintf("wrong arg: %s", os.Args[i]))
+			log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
 		}
 	}
-	// - decrypt reply email
 	// - composes an email via gmime
 	var buffer []byte
 	date_string := time.Now().Format(time.RFC1123Z)
@@ -77,7 +76,7 @@ func main() {
 		"From: " + meta_from + CRLF +
 		CRLF +
 		CRLF); err != nil {
-		panic(err)
+		log.Fatal(err)
 	} else {
 		message.ClearAddress("From")
 		message.ParseAndAppendAddresses("From", meta_from)
@@ -85,14 +84,6 @@ func main() {
 		message.ParseAndAppendAddresses("Cc", meta_cc)
 		message.ParseAndAppendAddresses("Bcc", meta_bcc)
 		message.SetSubject(meta_subject)
-		// Content-ID
-		// Date: Thu, 13 Dec 2018 14:19:38 +0000
-		// In-Reply-To
-		// MIME-Version
-		// Message-ID
-		// References
-		// Return-Path
-		// Thread-Topic
 		message.SetHeader("X-Epistula-Status", "I am not done")
 		message.SetHeader("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'.")
 		message.SetHeader("X-Epistula-Attachment", "#sample entry#")
@@ -103,10 +94,10 @@ func main() {
 			}
 			return nil
 		}); err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		if b, err := message.Export(); err != nil {
-			panic(err)
+			log.Fatal(err)
 		} else {
 			buffer = b
 		}
@@ -114,14 +105,14 @@ func main() {
 	// - exports it to a temp file
 	var tempfilename string
 	if f, err := os.CreateTemp("", "epistula-composer-"); err != nil {
-		panic(err)
+		log.Fatal(err)
 	} else {
 		defer os.Remove(f.Name()) // clean up
 		if _, err := f.Write(buffer); err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		if err := f.Close(); err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		tempfilename = f.Name()
 	}
@@ -142,19 +133,25 @@ func main() {
 		message = parseFile(tempfilename)
 		done = !strings.Contains(message.Header("X-Epistula-Status"), "not")
 	}
+	message.RemoveHeader("X-Epistula-Status")
+	message.RemoveHeader("X-Epistula-Comment")
+	message.RemoveHeader("X-Epistula-Attachment") // TODO add attachment
 	message.SetHeader("MIME-Version", "1.0")
 	message.SetHeader("User-Agent", "Epistula")
 	message.SetHeader("Content-Type", "text/plain; charset=utf-8")
 	message.SetHeader("Content-Transfer-Encoding", "quoted-printable")
-	message.RemoveHeader("X-Epistula-Status")
-	message.RemoveHeader("X-Epistula-Comment")
-	message.RemoveHeader("X-Epistula-Attachment")
-	// TODO add attachment
+	// Content-ID
+	// In-Reply-To
+	// MIME-Version
+	// Message-ID
+	// References
+	// Return-Path
+	// Thread-Topic
 	// - retreives the desired keys
 	// - encrypts the file via gpgme
 	// - sends the email
 	if b, err := message.Export(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	} else {
 		buffer = b
 	}
@@ -174,14 +171,14 @@ func main() {
 
 func parseFile(filename string) *gmime.Envelope {
 	if fh, err := os.Open(filename); err != nil {
-		panic(err)
+		log.Fatal(err)
 	} else {
 		defer fh.Close()
 		if data, err := ioutil.ReadAll(bufio.NewReader(fh)); err != nil {
-			panic(err)
+			log.Fatal(err)
 		} else {
 			if envelope, err := gmime.Parse(string(data)); err != nil {
-				panic(err)
+				log.Fatal(err)
 			} else {
 				return envelope
 			}

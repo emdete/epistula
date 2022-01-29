@@ -37,9 +37,35 @@ So mainly the project is just a driver for those fine libraries.
 Preconditions
 --
 
-While i was a big fan of rxvt i switched to gnome-terminal recently because it has better support for all the fancy stuff tcell supports like more colors, mouse reporting, double width characters and so on.
+While i was a big fan of rxvt i switched to gnome-terminal recently because it has better support for all the fancy stuff tcell supports like more colors, mouse reporting, double width characters and so on. Editing mails will start another terminal which is gnome-terminal. This is hardcoded for now.
+
+I use [NeoVim] for editing. This is hardcoded for now.
 
 I use the font Iosevka which gives proper, sharp letters and contains unicode special chars.
+
+Build
+--
+
+Just compile and run the program like this:
+
+```
+cd composer/
+go build
+cd ..
+cd browser/
+go build
+./epistula-browser --from="..." 2>/tmp/e.log
+```
+
+Using
+--
+
+- editing the query: Mouse-Left-Click, Mouse-Scroll, Key-Left/Right, Characters (on top)
+- navigating the result list of threads: Mouse-Left-Click, Mouse-Scroll, Key-Up/Down, Ctrl-Key-Up/Down (on the left)
+- navigating the list of mails: Key-Page-Up/Down, Ctrl-Key-PageUp/Down (on the right)
+- globally
+	- Ctrl-Key-C: Compose an email
+	- Ctrl-Key-R: Reply an email
 
 Warning
 --
