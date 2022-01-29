@@ -22,19 +22,21 @@ const (
 func main() {
 	log.SetPrefix("email ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
-	log.SetOutput(os.Stderr)
+	if fs, err := os.Create("/tmp/c.log"); err != nil {
+		log.SetOutput(os.Stderr)
+	} else {
+		log.SetOutput(fs)
+	}
 	log.Printf("main %#v", os.Args)
 	// The Idea is as follows: the composeser
 	// - is called with all information in its arguments like --from, --reply, --to, --subject, --cc, --bcc, ...
-	var meta_from_name, meta_from, meta_to, meta_cc, meta_bcc, meta_subject, content_text string
+	var meta_from, meta_to, meta_cc, meta_bcc, meta_subject, content_text string
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {
 			x := strings.Split(os.Args[i][2:], "=")
 			switch x[0] {
 			case "from":
 				meta_from = x[1]
-			case "from-name":
-				meta_from_name = x[1]
 			case "to":
 				meta_to = x[1]
 			case "cc":
@@ -67,6 +69,9 @@ func main() {
 	// - composes an email via gmime
 	var buffer []byte
 	date_string := time.Now().Format(time.RFC1123Z)
+	// go-gmime doesnt support creation of envelopes or parts in envelopes yet.
+	// so we create an empty dummy email and modify the elements after parsing
+	// it
 	if message, err := gmime.Parse(
 		"Date: " + date_string + CRLF +
 		"From: " + meta_from + CRLF +
@@ -75,7 +80,7 @@ func main() {
 		panic(err)
 	} else {
 		message.ClearAddress("From")
-		message.AddAddress("From", meta_from_name, meta_from)
+		message.ParseAndAppendAddresses("From", meta_from)
 		message.ParseAndAppendAddresses("To", meta_to) // TODO how to add an empty "To:", .. ?
 		message.ParseAndAppendAddresses("Cc", meta_cc)
 		message.ParseAndAppendAddresses("Bcc", meta_bcc)
@@ -88,8 +93,8 @@ func main() {
 		// References
 		// Return-Path
 		// Thread-Topic
-		message.SetHeader("X-Epistula-State", "I am not done")
-		message.SetHeader("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the State to not contain 'not'.")
+		message.SetHeader("X-Epistula-Status", "I am not done")
+		message.SetHeader("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'.")
 		message.SetHeader("X-Epistula-Attachment", "#sample entry#")
 		content_text = "> " + strings.ReplaceAll(content_text, "\n", "\n> ")
 		if err := message.Walk(func (part *gmime.Part) error {
