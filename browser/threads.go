@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"fmt"
+	"errors"
 	"time"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
@@ -17,7 +18,6 @@ type Threads struct {
 	threadEntries [100](*ThreadEntry) // list of found threads // TODO add dynamic+pageing
 	offset int // offset into the list, whats on top
 	selected_index int // which thread is selected
-	refresh bool // do we refresh even if the query did not change
 }
 
 func NewThreads(s tcell.Screen) (this Threads) {
@@ -99,6 +99,8 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 	switch ev := event.(type) {
 	case *tcell.EventKey:
 		switch ev.Key() {
+		case tcell.KeyCtrlA:
+			ThreadRemoveTag(this.threadEntries[this.selected_index].id, "inbox")
 		case tcell.KeyDown:
 			if ev.Modifiers()&tcell.ModCtrl != 0 {
 				for i:=0;i<THREADS_PAGE;i++ {
@@ -132,7 +134,7 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 			this.dirty = this.doDown(true)
 		}
 	case *EventQuery:
-		this.do_query(s, ev.query)
+		this.do_query(s, ev.query, ev.refresh)
 		this.dirty = true
 	}
 	if old_index != this.selected_index {
@@ -140,9 +142,9 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 	}
 }
 
-func (this *Threads) do_query(s tcell.Screen, query string) {
+func (this *Threads) do_query(s tcell.Screen, query string, refresh bool) {
 	log.Printf("Threads.do_query %v", query)
-	if this.last_query != query || this.refresh {
+	if this.last_query != query || refresh {
 		this.last_query = query
 		if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadOnly); err != nil {
 			panic(err)
@@ -228,20 +230,6 @@ func newThreadEntry(thread *notmuch.Thread) *ThreadEntry {
 		thread.Count(),
 		thread.NewestDate(),
 	}
-	// thread.CountMatched()
-	// thread.OldestDate()
-	// tags := thread.Tags()
-	// var tag *notmuch.Tag
-	// for tags.Next(&tag) {
-	// log.Printf("tag=%s", tag)
-	// }
-	// thread.Messages()
-	// messages := thread.Messages()
-	// var message *notmuch.Message
-	// for messages.Next(&message) {
-	// defer message.Close()
-	// log.Printf("filename=%s", message.Filename())
-	// }
 	return &this
 }
 
@@ -291,5 +279,31 @@ func ThreadHasTag(thread *notmuch.Thread, search string) bool {
 		}
 	}
 	return false
+}
+
+func ThreadRemoveTag(id, tag string) error {
+	if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadWrite); err != nil {
+		return err
+	} else {
+		defer db.Close()
+		query := db.NewQuery(id)
+		defer query.Close()
+		if 1 != query.CountThreads() { return errors.New("not uniq") }
+		if threads, err := query.Threads(); err != nil {
+			return err
+		} else {
+			var thread *notmuch.Thread
+			if threads.Next(&thread) {
+				defer thread.Close()
+			}
+			messages := thread.Messages()
+			var message *notmuch.Message
+			for messages.Next(&message) {
+				if err := message.RemoveTag(tag); err != nil { return err }
+			}
+			if threads.Next(&thread) { return errors.New("additional thread") }
+		}
+	}
+	return nil
 }
 

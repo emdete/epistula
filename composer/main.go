@@ -47,7 +47,9 @@ func main() {
 				meta_subject = x[1]
 			case "reply":
 				//
-			case "text":
+			case "reply-message-id=":
+				//
+			case "reply-text":
 				if fh, err := os.Open(x[1]); err != nil {
 					log.Fatal(err)
 				} else {

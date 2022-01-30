@@ -22,7 +22,7 @@ func NewQuery(s tcell.Screen) (this Query) {
 	this.query = QUERY_DEFAULT + QUERY_SUFFIX
 	this.pasting = false
 	this.dirty = true
-	this.notify(s)
+	this.notify(s, false)
 	return
 }
 
@@ -85,7 +85,7 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) {
 			this.pos_cur = len(this.query)
 			this.dirty = true
 		case tcell.KeyEnter:
-			this.notify(s)
+			this.notify(s, false)
 		case tcell.KeyTab:
 			this.pos_cur = len(QUERY_DEFAULT) + len(QUERY_SUFFIX)
 			this.query = QUERY_DEFAULT + QUERY_SUFFIX
@@ -123,9 +123,10 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) {
 type EventQuery struct {
 	tcell.EventTime
 	query string
+	refresh bool
 }
 
-func (this *Query) notify(s tcell.Screen) {
+func (this *Query) notify(s tcell.Screen, refresh bool) {
 	ev := &EventQuery{}
 	ev.SetEventNow()
 	if strings.HasSuffix(this.query, QUERY_SUFFIX) {
@@ -134,6 +135,7 @@ func (this *Query) notify(s tcell.Screen) {
 	} else {
 		ev.query = this.query
 	}
+	ev.refresh = refresh
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}

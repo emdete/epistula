@@ -126,6 +126,9 @@ func main() {
 					mails.EventHandler(s, event)
 				case tcell.KeyEscape:
 					running = false
+				case tcell.KeyCtrlA:
+					threads.EventHandler(s, ev)
+					query.notify(s, true)
 				case tcell.KeyCtrlC:
 					compose()
 				case tcell.KeyCtrlR:
@@ -135,7 +138,6 @@ func main() {
 				case tcell.KeyCtrlB:
 					s.Beep()
 				case tcell.KeyCtrlL:
-					notifyRefresh(s)
 					s.Sync()
 				}
 			case *tcell.EventMouse:
@@ -150,8 +152,6 @@ func main() {
 				query.EventHandler(s, event)
 			case *tcell.EventResize:
 				frames.EventHandler(s, event)
-			case *EventMainRefresh: // request to re-issue query
-				threads.EventHandler(s, event)
 			case *EventQuery: // query input reports new querystring -> threads
 				threads.EventHandler(s, event)
 			case *EventThreadsStatus: // threads report new thread list / stats -> status
@@ -187,27 +187,15 @@ func reply(mailfilename string) {
 		"../composer/epistula-composer",
 			"--from=",
 			"--reply",
-			"--text=",
+			"--reply-text=",
+			"--reply-message-id=",
+			// TODO ML
 			"--to=",
 			"--subject=",
 			"--cc=",
 			"--bcc=",
 		)
 	go cmd.Run()
-}
-
-// event telling to refresh the threads cause mails arrived / db changed
-type EventMainRefresh struct {
-	tcell.EventTime
-	query string
-}
-
-func notifyRefresh(s tcell.Screen) {
-	ev := &EventMainRefresh{}
-	ev.SetEventNow()
-	if err := s.PostEvent(ev); err != nil {
-		panic(err)
-	}
 }
 
 type Area struct {
