@@ -22,11 +22,6 @@ import (
 	)
 
 func main() {
-	// Signal()
-	// log.Printf("%v", HaveAdressKey("anne@droeselwitz.de"))
-	// log.Printf("%v", HaveAdressKey("mdt@emdete.de"))
-	// ImportKey("/tmp/test.pgp")
-	// LogExpiredKeys()
-	// RunAutoCrypt()
+	Test()
 }
 
