@@ -90,9 +90,11 @@ func main() {
 		message.ParseAndAppendAddresses("Bcc", meta_bcc)
 		message.SetSubject(meta_subject)
 		message.SetHeader("X-Epistula-Status", "I am not done")
-		message.SetHeader("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'.")
+		message.SetHeader("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'. Add a 'abort' to abort sending (editings lost).")
 		message.SetHeader("X-Epistula-Attachment", "#sample entry#")
-		content_text = "> " + strings.ReplaceAll(content_text, "\n", "\n> ")
+		if content_text != "" {
+			content_text = "> " + strings.ReplaceAll(content_text, "\n", "\n> ")
+		}
 		if err := message.Walk(func (part *gmime.Part) error {
 			if part.IsText() && part.ContentType() == "text/plain" {
 				part.SetText(content_text)
@@ -126,6 +128,7 @@ func main() {
 	//if true { return }
 	var message *gmime.Envelope
 	done := false
+	abort := false
 	for !done {
 		if EDITOR, err := exec.LookPath(EDITOR); err == nil {
 			var procAttr os.ProcAttr
@@ -136,7 +139,12 @@ func main() {
 		}
 	// - parses the file via gmime
 		message = parseFile(tempfilename)
-		done = !strings.Contains(message.Header("X-Epistula-Status"), "not")
+		status := message.Header("X-Epistula-Status")
+		done = !strings.Contains(status, "not")
+		abort = strings.Contains(status, "abort")
+	}
+	if abort {
+		os.Exit(0)
 	}
 	message.RemoveHeader("X-Epistula-Status")
 	message.RemoveHeader("X-Epistula-Comment")
@@ -161,7 +169,20 @@ func main() {
 	} else {
 		buffer = b
 	}
-	_ = []string{"sendmail", "-oem", "-oi", "-t", }[1]
+	cmd := exec.Command("sendmail", "-t", )
+	if stdin, err := cmd.StdinPipe(); err != nil {
+		log.Fatal(err)
+	} else {
+		go func() {
+			defer stdin.Close()
+			stdin.Write(buffer)
+		}()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			log.Fatal(err)
+		} else {
+			log.Printf("%s\n", out)
+		}
+	}
 	//
 	// because the exported (for edit) email includes all meta data the program can add
 	// x-epistula-* meta data that "talks to the user", for example telling her
@@ -177,14 +198,14 @@ func main() {
 
 func parseFile(filename string) *gmime.Envelope {
 	if fh, err := os.Open(filename); err != nil {
-		log.Fatal(err)
+		return nil
 	} else {
 		defer fh.Close()
 		if data, err := ioutil.ReadAll(bufio.NewReader(fh)); err != nil {
-			log.Fatal(err)
+			return nil
 		} else {
 			if envelope, err := gmime.Parse(string(data)); err != nil {
-				log.Fatal(err)
+				return nil
 			} else {
 				return envelope
 			}
