@@ -1,6 +1,3 @@
 Makefile
-epistula-browser
-epistula-composer
-goui
 .*.sw?
 *.dis
