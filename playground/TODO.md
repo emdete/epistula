@@ -1,7 +1,7 @@
 TODOs
 ==
 
-- remove unread on leave
+- remove tag unread on leave
 - pipe sendmail
 - retrieve public keys for a set of email addresses, if not available locally retrieve from key server, all via gpgme
 - compose a (reply-)email properly with all necessary meta information, all via gmime
