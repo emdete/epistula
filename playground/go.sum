@@ -1,0 +1,10 @@
+github.com/msbranco/goconfig v0.0.0-20160629072055-3189001257ce h1:QtMvEL/+svm0fxbpyRZS0aquv34BCfMwksEE+2aTLZU=
+github.com/msbranco/goconfig v0.0.0-20160629072055-3189001257ce/go.mod h1:PKNAOitD7HlXaDyVXgbpVnof2Th8T7Glv5Wz0lJLCEg=
+github.com/proglottis/gpgme v0.1.1 h1:72xI0pt/hy7pqsRxk32KExITkXp+RZErRizsA+up/lQ=
+github.com/proglottis/gpgme v0.1.1/go.mod h1:fPbW/EZ0LvwQtH8Hy7eixhp1eF3G39dtx7GUN+0Gmy0=
+github.com/robfig/config v0.0.0-20141207224736-0f78529c8c7e h1:3/9k/etUfgykjM3Rx8X0echJzo7gNNeND/ubPkqYw1k=
+github.com/robfig/config v0.0.0-20141207224736-0f78529c8c7e/go.mod h1:Zerq1qYbCKtIIU9QgPydffGlpYfZ8KI/si49wuTLY/Q=
+github.com/sendgrid/go-gmime v0.0.0-20211124164648-4c44cbd981d8 h1:0GNxzZ1Dg9Stiw/+3R+z61Zb14aCoPuYFWgDrHHI76g=
+github.com/sendgrid/go-gmime v0.0.0-20211124164648-4c44cbd981d8/go.mod h1:tvczTtNaqXql3MMP3N1jG6Jbl5Yc8RmGccwKuYilNao=
+github.com/zenhack/go.notmuch v0.0.0-20211022191430-4d57e8ad2a8b h1:mIYa3xMMH6GLD/Q21zxE0rxPbOikeY3iNN1VwU0lcAc=
+github.com/zenhack/go.notmuch v0.0.0-20211022191430-4d57e8ad2a8b/go.mod h1:zJtFvR3NinVdmBiLyB4MyXKmqyVfZEb2cK97ISfTgV8=
