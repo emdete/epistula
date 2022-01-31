@@ -20,16 +20,7 @@ const (
 )
 
 func main() {
-	log.SetPrefix("email ")
-	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
-	if fs, err := os.Create("/tmp/c.log"); err != nil {
-		log.SetOutput(os.Stderr)
-	} else {
-		log.SetOutput(fs)
-	}
-	log.Printf("main %#v", os.Args)
-	// The Idea is as follows: the composeser
-	// - is called with all information in its arguments like --from, --reply, --to, --subject, --cc, --bcc, ...
+	// args
 	var meta_from, meta_to, meta_cc, meta_bcc, meta_subject, meta_reply_message_id, content_text string
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {
@@ -65,6 +56,20 @@ func main() {
 			log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
 		}
 	}
+	// title
+	title := "Epistula Composer: " + meta_from + " to " + meta_to
+	os.Stdout.Write([]byte("\x1b]1;"+title+"\a\x1b]2;"+title+"\a"))
+	//
+	log.SetPrefix("email ")
+	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
+	if fs, err := os.Create("/tmp/c.log"); err != nil {
+		log.SetOutput(os.Stderr)
+	} else {
+		log.SetOutput(fs)
+	}
+	log.Printf("main %#v", os.Args)
+	// The Idea is as follows: the composeser
+	// - is called with all information in its arguments like --from, --reply, --to, --subject, --cc, --bcc, ...
 	// - composes an email via gmime
 	var buffer []byte
 	date_string := time.Now().Format(time.RFC1123Z)
