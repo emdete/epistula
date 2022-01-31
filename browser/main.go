@@ -168,9 +168,9 @@ func main() {
 			case *EventSignal:
 				switch ev.sig {
 				case syscall.SIGHUP:
-					query.notify(s, true)
+					config = NewConfig()
 				case syscall.SIGUSR1:
-					//
+					query.notify(s, true)
 				case syscall.SIGUSR2:
 					//
 				}
