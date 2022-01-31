@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Epistula
+Comment=Epistula
+Exec=epistula-browser %u
+Icon=epistula
+Terminal=true
+Type=Application
+Keywords=Email;E-mail;
+Categories=Email;
+MimeType=x-scheme-handler/mailto;
