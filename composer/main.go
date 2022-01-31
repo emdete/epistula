@@ -183,6 +183,7 @@ func main() {
 			log.Printf("%s\n", out)
 		}
 	}
+	// - saves the email in maildir and kicks off notmuch new
 	//
 	// because the exported (for edit) email includes all meta data the program can add
 	// x-epistula-* meta data that "talks to the user", for example telling her
