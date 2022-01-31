@@ -126,7 +126,7 @@ func main() {
 					mails.EventHandler(s, event)
 				case tcell.KeyEscape:
 					running = false
-				case tcell.KeyCtrlA:
+				case tcell.KeyCtrlA, tcell.KeyCtrlS:
 					threads.EventHandler(s, ev)
 					query.notify(s, true)
 				case tcell.KeyCtrlC:
@@ -186,7 +186,6 @@ func reply(mailfilename string) {
 		"--",
 		"../composer/epistula-composer",
 			"--from=",
-			"--reply",
 			"--reply-text=",
 			"--reply-message-id=",
 			// TODO ML

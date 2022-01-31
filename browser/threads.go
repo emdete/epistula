@@ -35,6 +35,7 @@ func (this *Threads) Close() {
 }
 
 func (this *Threads) Draw(s tcell.Screen) (ret bool) {
+	this.ClearArea(s)
 	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#cc7711"))
 	for i, threadEntry := range this.threadEntries[this.offset:] {
 		//log.Printf("%d: %v", i, threadEntry)
@@ -101,6 +102,9 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 		switch ev.Key() {
 		case tcell.KeyCtrlA:
 			ThreadRemoveTag(this.threadEntries[this.selected_index].id, "inbox")
+		case tcell.KeyCtrlS:
+			ThreadRemoveTag(this.threadEntries[this.selected_index].id, "inbox")
+			ThreadAddTag(this.threadEntries[this.selected_index].id, "spam")
 		case tcell.KeyDown:
 			if ev.Modifiers()&tcell.ModCtrl != 0 {
 				for i:=0;i<THREADS_PAGE;i++ {
@@ -281,12 +285,39 @@ func ThreadHasTag(thread *notmuch.Thread, search string) bool {
 	return false
 }
 
+func ThreadAddTag(id, tag string) error {
+	if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadWrite); err != nil {
+		return err
+	} else {
+		defer db.Close()
+		query := db.NewQuery("thread:" + id)
+		defer query.Close()
+		if 1 != query.CountThreads() { return errors.New("not uniq") }
+		if threads, err := query.Threads(); err != nil {
+			return err
+		} else {
+			var thread *notmuch.Thread
+			if threads.Next(&thread) {
+				defer thread.Close()
+			}
+			messages := thread.Messages()
+			var message *notmuch.Message
+			for messages.Next(&message) {
+				if err := message.AddTag(tag); err != nil { return err }
+			}
+			if threads.Next(&thread) { return errors.New("additional thread") }
+		}
+	}
+	return nil
+}
+
+
 func ThreadRemoveTag(id, tag string) error {
 	if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadWrite); err != nil {
 		return err
 	} else {
 		defer db.Close()
-		query := db.NewQuery(id)
+		query := db.NewQuery("thread:" + id)
 		defer query.Close()
 		if 1 != query.CountThreads() { return errors.New("not uniq") }
 		if threads, err := query.Threads(); err != nil {

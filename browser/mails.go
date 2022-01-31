@@ -158,7 +158,7 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 		panic(err)
 	} else {
 		defer db.Close()
-		query := db.NewQuery(this.id)
+		query := db.NewQuery("thread:" + this.id)
 		defer query.Close()
 		if 1 != query.CountThreads() {
 			return
@@ -277,7 +277,7 @@ func (this *Mails) GetSelectedMailFilename() string {
 		return ""
 	} else {
 		defer db.Close()
-		query := db.NewQuery(this.id)
+		query := db.NewQuery("thread:" + this.id)
 		defer query.Close()
 		if 1 != query.CountThreads() {
 			return ""
