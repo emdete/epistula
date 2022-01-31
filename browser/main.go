@@ -66,7 +66,7 @@ func _log() {
 func main() {
 	config := NewConfig()
 	// terminal title
-	title := "epistula browser " + config.user_name
+	title := "Epistula Browser: " + config.user_name
 	os.Stdout.Write([]byte("\x1b]1;"+title+"\a\x1b]2;"+title+"\a"))
 	// log
 	_log()
