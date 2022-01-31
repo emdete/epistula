@@ -5,4 +5,5 @@ TODOs
 - compose a (reply-)email properly with all necessary meta information, all via gmime
 - encrypt an email for all recepients, all via gpgme
 - have another program for email composing which spawns an editor, check if tcell screen suspend-resume is working
+- being started with mail target (like from a browser mailto: url)
 

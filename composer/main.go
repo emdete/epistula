@@ -30,7 +30,7 @@ func main() {
 	log.Printf("main %#v", os.Args)
 	// The Idea is as follows: the composeser
 	// - is called with all information in its arguments like --from, --reply, --to, --subject, --cc, --bcc, ...
-	var meta_from, meta_to, meta_cc, meta_bcc, meta_subject, content_text string
+	var meta_from, meta_to, meta_cc, meta_bcc, meta_subject, meta_reply_message_id, content_text string
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {
 			x := strings.Split(os.Args[i][2:], "=")
@@ -45,10 +45,8 @@ func main() {
 				meta_bcc = x[1]
 			case "subject":
 				meta_subject = x[1]
-			case "reply":
-				//
 			case "reply-message-id=":
-				//
+				meta_reply_message_id = x[1]
 			case "reply-text":
 				if fh, err := os.Open(x[1]); err != nil {
 					log.Fatal(err)
@@ -142,8 +140,9 @@ func main() {
 	message.SetHeader("User-Agent", "Epistula")
 	message.SetHeader("Content-Type", "text/plain; charset=utf-8")
 	message.SetHeader("Content-Transfer-Encoding", "quoted-printable")
+	message.SetHeader("In-Reply-To", meta_reply_message_id)
 	// Content-ID
-	// In-Reply-To
+	// Return-Path
 	// MIME-Version
 	// Message-ID
 	// References
