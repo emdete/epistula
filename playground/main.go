@@ -22,6 +22,8 @@ import (
 	)
 
 func main() {
-	Test()
+	if err := Test(); err != nil {
+		panic(err)
+	}
 }
 
