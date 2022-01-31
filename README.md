@@ -79,6 +79,9 @@ Using
 - globally
 	- Ctrl-Key-C: Compose an email
 	- Ctrl-Key-R: Reply an email
+	- Ctrl-Key-L: Refresh screen
+	- Ctrl-Key-S: Tag as spam
+	- Ctrl-Key-A: Archive, untag inbox
 
 Warning
 --
