@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"fmt"
+	"os/signal"
+	"syscall"
 	"strings"
 	"os/user"
 	"os/exec"
@@ -91,6 +93,7 @@ func main() {
 		panic(err)
 	} else {
 		defer s.Fini()
+		Signal(s)
 		if usr, err := user.Current(); err != nil {
 			panic(err)
 		} else {
@@ -162,6 +165,15 @@ func main() {
 				status.EventHandler(s, event)
 			case *EventThreadsThread: // threads report new selected thread -> threads
 				mails.EventHandler(s, event)
+			case *EventSignal:
+				switch ev.sig {
+				case syscall.SIGHUP:
+					query.notify(s, true)
+				case syscall.SIGUSR1:
+					//
+				case syscall.SIGUSR2:
+					//
+				}
 			}
 		}
 	}
@@ -282,5 +294,27 @@ func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, para
 	this.SetString(s, x+px, y, style, "", width+px)
 	y++
 	return x, y
+}
+
+type EventSignal struct {
+	tcell.EventTime
+	sig os.Signal
+}
+
+func Signal(s tcell.Screen) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGUSR1, syscall.SIGUSR2)
+	go func() {
+		for true {
+			sig := <-sigs
+			log.Printf("signal %v", sig)
+			ev := &EventSignal{}
+			ev.SetEventNow()
+			ev.sig = sig
+			if err := s.PostEvent(ev); err != nil {
+				panic(err)
+			}
+		}
+	}()
 }
 
