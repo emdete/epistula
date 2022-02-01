@@ -52,7 +52,7 @@ type IntPair struct {
 // RuneLLCorner = '└' // RuneBTee  = '┴' // RuneLRCorner = '┘'
 // RuneVLine =    '│' 
 
-func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *gmime.Envelope, index_message int, isencrypted, show bool) int {
+func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *gmime.Envelope, index_message int, isencrypted, selected bool) int {
 	style_normal := tcell.StyleDefault.Background(tcell.ColorLightGray)
 	selected_style := tcell.StyleDefault.Background(tcell.GetColor("#eeeeee"))
 	if isencrypted {
@@ -61,13 +61,13 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 		style_normal = style_normal.Foreground(tcell.ColorDarkRed)
 	}
 	style_header := style_normal.Reverse(true)
-	if !show {
+	if !selected {
 		style_normal = style_normal.Background(tcell.ColorDarkGray)
 	}
 	style_frame := tcell.StyleDefault.Foreground(tcell.ColorLightGray)
 	w := this.dx - px
 	this.SetString(s, px, py, style_header, " " + envelope.Header("Subject"), w)
-	if show {
+	if selected {
 		this.SetContent(s, px+w-2, py, MAILS_OPEN, nil, style_header)
 		this.SetContent(s, px+w-1, py, ' ', nil, selected_style)
 	} else {
@@ -79,44 +79,40 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 	w-- // indent reduced width
 	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 	this.SetString(s, px+1, py, style_normal, envelope.Header("Date"), w)
-	if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
+	if selected { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 	py++
 	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 	this.SetString(s, px+1, py, style_normal, "From: " + envelope.Header("From"), w)
-	if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
+	if selected { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 	py++
 	this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 	this.SetString(s, px+1, py, style_normal, "To: " + envelope.Header("To"), w)
-	if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
+	if selected { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 	py++
 	if envelope.Header("CC") != "" {
 		this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 		this.SetString(s, px+1, py, style_normal, "CC: " + envelope.Header("CC"), w)
-		if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
+		if selected { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 		py++
 	}
 	if decrypted != nil {
 		envelope = decrypted
 	}
-	if show {
-		even := true
+	if selected {
+		//even := true
 		style_normal_dim := style_normal.Background(tcell.ColorDarkGray)
 		index_message_part := 0
 		if err := envelope.Walk(func (part *gmime.Part) error {
-			style := style_normal
-			if even {
-				style = style_normal_dim
-			}
 			this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
-			this.SetString(s, px+1, py, style, part.ContentType() + " " + part.Filename(), w)
-			this.SetContent(s, px+w-1, py, MAILS_CLOSE, nil, style)
+			this.SetString(s, px+1, py, style_normal_dim, part.ContentType() + " " + part.Filename(), w)
+			this.SetContent(s, px+w-1, py, MAILS_CLOSE, nil, style_normal_dim)
 			this.cache[IntPair{px+w-1,py}] = IntPair{index_message,index_message_part}
-			if show { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
+			if selected { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 			py++
 			//if part.ContentType() == "message/rfc822" { if envlp, err := gmime.Parse(part.Text()); err != nil {}}
 			//if part.IsAttachment() {}
 			if part.IsText() {
-				this.SetContent(s, px+w-1, py-1, MAILS_OPEN, nil, style)
+				this.SetContent(s, px+w-1, py-1, MAILS_OPEN, nil, style_normal_dim)
 				textline := 0
 				paragraphprefix := ""
 				lastparagraphempty := true
@@ -125,28 +121,30 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 					text = part.Text()
 				} else if part.ContentType() == "text/html" {
 					text, _ = HtmlToPlaintext(part.Text())
+				} else {
+					log.Printf("unknown text type %s", part.ContentType())
 				}
 				for _, paragraph := range strings.Split(text, "\n") {
 					oy := py
 					paragraph = strings.TrimSpace(paragraph)
 					if !lastparagraphempty || len(paragraph) > 0 {
-						_, py = this.SetParagraph(s, px+1, py, style, paragraphprefix, paragraph, w)
+						_, py = this.SetParagraph(s, px+1, py, style_normal, paragraphprefix, paragraph, w)
 						textline += py-oy
 						for oy < py {
 							this.SetContent(s, px, oy, tcell.RuneVLine, nil, style_frame)
-							if show { this.SetContent(s, px+w, oy, ' ', nil, selected_style) }
+							if selected { this.SetContent(s, px+w, oy, ' ', nil, selected_style) }
 							oy++
 						}
 					}
 					lastparagraphempty = len(paragraph) == 0
 					if textline > this.textlinelimit {
-						this.SetContent(s, px+w-1, py-1, MAILS_MORE, nil, style)
+						this.SetContent(s, px+w-1, py-1, MAILS_MORE, nil, style_normal)
 						this.cache[IntPair{px+w-1,py-1}] = IntPair{index_message,-2}
 						break
 					}
 				}
 			}
-			even = !even
+			//even = !even
 			index_message_part++
 			return nil
 		}); err != nil {
@@ -189,8 +187,8 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 							envelope := parseMessage(message)
 							defer envelope.Close()
 							isencrypted := MessageHasTag(message, "encrypted")
-							show := index_message == this.selected_index_message
-							py = this.drawMessage(s, px, py, envelope, decryptMessage(message, show && isencrypted), index_message, isencrypted, show)
+							selected := index_message == this.selected_index_message
+							py = this.drawMessage(s, px, py, envelope, decryptMessage(message, selected && isencrypted), index_message, isencrypted, selected)
 						}
 						index_message++
 						if replies, err := message.Replies(); err == nil {
@@ -385,7 +383,7 @@ func MessageHasTag(message *notmuch.Message, search string) bool {
 func HtmlToPlaintext(content string) (string, error) {
 	result := ""
 	cmd := exec.Command(
-		"elinks", "-dump",
+		"elinks", "-force-html", "-dump-charset", "utf-8", "-dump",
 		//"w3m", "-T", "text/html", "-I", "utf-8", "-O", "utf-8",
 		//"pandoc", "--reference-links", "-f", "html", "-t", "plain",
 		)
