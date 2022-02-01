@@ -11,6 +11,7 @@ TODOs
 - content type & utf8
 - query input & unicode
 - write own mails to maildir & kick off notmuch new
+- keep cursor position on refresh; know index by item, not number
 
 see also
 --
