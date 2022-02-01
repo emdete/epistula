@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/arran4/golang-ical v0.0.0-20220115055431-e3ae8290e7b8 // indirect
 	github.com/msbranco/goconfig v0.0.0-20160629072055-3189001257ce // indirect
 	github.com/robfig/config v0.0.0-20141207224736-0f78529c8c7e // indirect
 	github.com/sendgrid/go-gmime v0.0.0-20211124164648-4c44cbd981d8 // indirect

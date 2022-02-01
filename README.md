@@ -47,7 +47,7 @@ i use [NeoVim](https://neovim.org/) for editing. This is hardcoded for now.
 
 i use [elinks](http://elinks.cz/) to translate anoying html mails to readable plain text. pandoc and w3m did not succeed in showing links.
 
-i use the font [Iosevka](https://github.com/be5invis/Iosevka/) which gives proper, sharp letters and contains unicode special chars.
+i use the font [Iosevka](https://github.com/be5invis/Iosevka/) which gives proper, sharp letters and contains unicode special chars. Iosevka is a narrow font, if you prefer a wider font you can try "Roboto Mono" (see Google) which gives good results too.
 
 i used
 
@@ -88,6 +88,7 @@ Using
 	- Ctrl-Key-L: Refresh screen
 	- Ctrl-Key-S: Tag as spam
 	- Ctrl-Key-A: Archive, untag inbox
+	- Ctrl-Key-O: Open further lines on a text part
 
 Warning
 --

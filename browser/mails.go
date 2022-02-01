@@ -150,8 +150,14 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 							break
 						}
 					}
-				} else if part.IsAttachment() {
-					//
+				//} else if part.IsAttachment() {
+				//
+				} else {
+					// if we cannot display this part, increase
+					// selected_index_part, we are at index_message_part ==
+					// this.selected_index_part already so if we cant be
+					// displayd lets try the next one
+					this.selected_index_part++
 				}
 			}
 			index_message_part++
@@ -234,6 +240,9 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		this.dirty = true
 	case *tcell.EventKey:
 		switch ev.Key() {
+		case tcell.KeyCtrlO:
+			this.textlinelimit += MAILS_TEXTLINELIMIT
+			this.dirty = true
 		case tcell.KeyPgUp:
 			if this.paged_y > this.dy-1 {
 				this.paged_y -= this.dy - 1

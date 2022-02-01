@@ -139,6 +139,7 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 		}
 	case *EventQuery:
 		this.do_query(s, ev.query, ev.refresh)
+		old_index = -1
 		this.dirty = true
 	}
 	if old_index != this.selected_index {

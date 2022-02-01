@@ -129,7 +129,7 @@ func main() {
 					query.EventHandler(s, event)
 				case tcell.KeyUp, tcell.KeyDown:
 					threads.EventHandler(s, event)
-				case tcell.KeyPgUp, tcell.KeyPgDn:
+				case tcell.KeyPgUp, tcell.KeyPgDn, tcell.KeyCtrlO:
 					mails.EventHandler(s, event)
 				case tcell.KeyEscape:
 					running = false
