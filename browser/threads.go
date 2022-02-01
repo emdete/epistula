@@ -142,6 +142,9 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 		this.dirty = true
 	}
 	if old_index != this.selected_index {
+		if old_index >= 0 {
+			ThreadRemoveTag(this.threadEntries[old_index].id, "unread")
+		}
 		this.notifyThreadsThread(s)
 	}
 }

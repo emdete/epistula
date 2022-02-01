@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os/exec"
+	"io"
 	"os"
 	"strings"
 	"io/ioutil"
@@ -113,12 +115,18 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 			py++
 			//if part.ContentType() == "message/rfc822" { if envlp, err := gmime.Parse(part.Text()); err != nil {}}
 			//if part.IsAttachment() {}
-			if part.IsText() && part.ContentType() == "text/plain" {
+			if part.IsText() {
 				this.SetContent(s, px+w-1, py-1, MAILS_OPEN, nil, style)
 				textline := 0
 				paragraphprefix := ""
 				lastparagraphempty := true
-				for _, paragraph := range strings.Split(part.Text(), "\n") {
+				text := ""
+				if part.ContentType() == "text/plain" {
+					text = part.Text()
+				} else if part.ContentType() == "text/html" {
+					text, _ = HtmlToPlaintext(part.Text())
+				}
+				for _, paragraph := range strings.Split(text, "\n") {
 					oy := py
 					paragraph = strings.TrimSpace(paragraph)
 					if !lastparagraphempty || len(paragraph) > 0 {
@@ -372,5 +380,43 @@ func MessageHasTag(message *notmuch.Message, search string) bool {
 		}
 	}
 	return false
+}
+
+func HtmlToPlaintext(content string) (string, error) {
+	result := ""
+	cmd := exec.Command(
+		"elinks", "-dump",
+		//"w3m", "-T", "text/html", "-I", "utf-8", "-O", "utf-8",
+		//"pandoc", "--reference-links", "-f", "html", "-t", "plain",
+		)
+	if stdin, err := cmd.StdinPipe(); err != nil {
+		return "", err
+	} else {
+		go func() {
+			defer stdin.Close()
+			if _, err := io.WriteString(stdin, content); err != nil {
+				panic(err)
+			}
+		}()
+	}
+	if stdout, err := cmd.StdoutPipe(); err != nil {
+		return "", err
+	} else {
+		go func() {
+			defer stdout.Close()
+			if data, err := ioutil.ReadAll(bufio.NewReader(stdout)); err != nil {
+				panic(err)
+			} else {
+				result = string(data)
+			}
+		}()
+	}
+	if err := cmd.Start(); err != nil {
+		return "", err
+	}
+	if err := cmd.Wait(); err != nil {
+		return "", err
+	}
+	return result, nil
 }
 
