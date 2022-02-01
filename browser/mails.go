@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"fmt"
 	"os/exec"
 	"io"
 	"os"
@@ -16,6 +17,8 @@ import (
 	"github.com/sendgrid/go-gmime/gmime"
 	// see ~/go/pkg/mod/github.com/zenhack/go.notmuch@v0.0.0-20211022191430-4d57e8ad2a8b/
 	"github.com/zenhack/go.notmuch"
+	// see ~/go/pkg/mod/github.com/arran4/golang-ical@v0.0.0-20220115055431-e3ae8290e7b8/
+	"github.com/arran4/golang-ical"
 )
 
 type Mails struct {
@@ -43,6 +46,9 @@ const (
 	MAILS_TEXTLINELIMIT = 12
 )
 
+// this pair caches positions of the controls like MAILS_MORE on the screen so
+// we know where to look at if the user klicks one. it maps a screen position
+// (or better area position) to a mail idx/part idx in Mails.cache.
 type IntPair struct {
 	a,b int
 }
@@ -99,7 +105,6 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 		envelope = decrypted
 	}
 	if selected {
-		//even := true
 		style_normal_dim := style_normal.Background(tcell.ColorDarkGray)
 		index_message_part := 0
 		if err := envelope.Walk(func (part *gmime.Part) error {
@@ -109,42 +114,46 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 			this.cache[IntPair{px+w-1,py}] = IntPair{index_message,index_message_part}
 			if selected { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 			py++
-			//if part.ContentType() == "message/rfc822" { if envlp, err := gmime.Parse(part.Text()); err != nil {}}
-			//if part.IsAttachment() {}
-			if part.IsText() {
-				this.SetContent(s, px+w-1, py-1, MAILS_OPEN, nil, style_normal_dim)
-				textline := 0
-				paragraphprefix := ""
-				lastparagraphempty := true
-				text := ""
-				if part.ContentType() == "text/plain" {
-					text = part.Text()
-				} else if part.ContentType() == "text/html" {
-					text, _ = HtmlToPlaintext(part.Text())
-				} else {
-					log.Printf("unknown text type %s", part.ContentType())
-				}
-				for _, paragraph := range strings.Split(text, "\n") {
-					oy := py
-					paragraph = strings.TrimSpace(paragraph)
-					if !lastparagraphempty || len(paragraph) > 0 {
-						_, py = this.SetParagraph(s, px+1, py, style_normal, paragraphprefix, paragraph, w)
-						textline += py-oy
-						for oy < py {
-							this.SetContent(s, px, oy, tcell.RuneVLine, nil, style_frame)
-							if selected { this.SetContent(s, px+w, oy, ' ', nil, selected_style) }
-							oy++
+			if index_message_part == this.selected_index_part {
+				//if part.ContentType() == "message/rfc822" { if envlp, err := gmime.Parse(part.Text()); err != nil {}}
+				if part.IsText() {
+					this.SetContent(s, px+w-1, py-1, MAILS_OPEN, nil, style_normal_dim)
+					textline := 0
+					paragraphprefix := ""
+					lastparagraphempty := true
+					text := ""
+					if part.ContentType() == "text/plain" {
+						text = part.Text()
+					} else if part.ContentType() == "text/html" {
+						text, _ = HtmlToPlaintext(part.Text())
+					} else if part.ContentType() == "text/calendar" {
+						text, _ = ICalToPlaintext(part.Text())
+					} else {
+						log.Printf("unknown text type %s", part.ContentType())
+					}
+					for _, paragraph := range strings.Split(text, "\n") {
+						oy := py
+						paragraph = strings.TrimSpace(paragraph)
+						if !lastparagraphempty || len(paragraph) > 0 {
+							_, py = this.SetParagraph(s, px+1, py, style_normal, paragraphprefix, paragraph, w)
+							textline += py-oy
+							for oy < py {
+								this.SetContent(s, px, oy, tcell.RuneVLine, nil, style_frame)
+								if selected { this.SetContent(s, px+w, oy, ' ', nil, selected_style) }
+								oy++
+							}
+						}
+						lastparagraphempty = len(paragraph) == 0
+						if textline > this.textlinelimit {
+							this.SetContent(s, px+w-1, py-1, MAILS_MORE, nil, style_normal)
+							this.cache[IntPair{px+w-1,py-1}] = IntPair{index_message,-2}
+							break
 						}
 					}
-					lastparagraphempty = len(paragraph) == 0
-					if textline > this.textlinelimit {
-						this.SetContent(s, px+w-1, py-1, MAILS_MORE, nil, style_normal)
-						this.cache[IntPair{px+w-1,py-1}] = IntPair{index_message,-2}
-						break
-					}
+				} else if part.IsAttachment() {
+					//
 				}
 			}
-			//even = !even
 			index_message_part++
 			return nil
 		}); err != nil {
@@ -414,6 +423,31 @@ func HtmlToPlaintext(content string) (string, error) {
 	}
 	if err := cmd.Wait(); err != nil {
 		return "", err
+	}
+	return result, nil
+}
+
+func ICalToPlaintext(content string) (string, error) {
+	ioutil.WriteFile("/tmp/m.ical", []byte(content), 0644)
+	result := ""
+	if cal, err := ics.ParseCalendar(strings.NewReader(content)); err != nil {
+		return "", err
+	} else {
+		log.Printf("%#v", cal)
+		for _, component := range cal.Components {
+			//t,_ := component.GetSummary()
+			//t,_ := component.GetOrganizer()
+			//t,_ := component.GetDescription()
+			//t,_ := component.GetAttendee()
+			//t,_ := component.GetLocation()
+			//result = result + fmt.Sprintf("%s\n", t)
+			log.Printf("%#v", component)
+		}
+		for _, event := range cal.Events() {
+			s,_ := event.GetStartAt()
+			e,_ := event.GetEndAt()
+			result = result + fmt.Sprintf("%s - %s\n", s.String(), e.String())
+		}
 	}
 	return result, nil
 }

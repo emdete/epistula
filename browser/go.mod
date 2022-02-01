@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/arran4/golang-ical v0.0.0-20220115055431-e3ae8290e7b8 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
