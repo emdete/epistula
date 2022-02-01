@@ -60,6 +60,8 @@ to be able to find emails with public keys in the meta data.
 
 i use `notmuch new --decrypt=true` and have decrypted data from my crypted email in the xapian database.
 
+i use an external script to retrieve new mail and kick off `notmuch new`. After that the browser needs an event to refresh its query result. This is done by a unix signal USR1 which is send by a `killall -USR1 epistula-browser`.
+
 Build
 --
 
