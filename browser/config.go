@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path"
+	//
 	"github.com/robfig/config"
 	)
 
@@ -12,6 +13,7 @@ type Config struct {
 }
 
 func NewConfig() *Config {
+	log.Printf("NewConfig")
 	this := Config{}
 	configfilename := os.Getenv("NOTMUCH_CONFIG")
 	if configfilename == "" {
@@ -20,7 +22,7 @@ func NewConfig() *Config {
 	if cfg, err := config.ReadDefault(configfilename); err != nil {
 		panic(err)
 	} else {
-		log.Printf("%#v", cfg)
+		// log.Printf("NewConfig %#v", cfg)
 		this.database_path,_ = cfg.String("database", "path")
 		this.user_name,_ = cfg.String("user", "name")
 		this.user_primary_email,_ = cfg.String("user", "primary_email")

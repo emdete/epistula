@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"strings"
 	"os/user"
-	"os/exec"
 	"path/filepath"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
@@ -61,7 +60,7 @@ func updateScreen(s tcell.Screen) {
 }
 
 func _log() {
-	log.SetPrefix("email ")
+	log.SetPrefix("epistula ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
 	log.SetOutput(os.Stderr)
 }
@@ -126,28 +125,39 @@ func main() {
 			switch ev := event.(type) {
 			case *tcell.EventKey:
 				switch ev.Key() {
-				case tcell.KeyRune, tcell.KeyLeft, tcell.KeyRight,
-					tcell.KeyBackspace, tcell.KeyBackspace2, tcell.KeyEnter,
-					tcell.KeyDelete, tcell.KeyHome, tcell.KeyEnd, tcell.KeyTab:
+				case tcell.KeyRune, // all input goes to the query editing
+						tcell.KeyLeft,
+						tcell.KeyRight,
+						tcell.KeyBackspace,
+						tcell.KeyBackspace2,
+						tcell.KeyEnter,
+						tcell.KeyDelete,
+						tcell.KeyHome,
+						tcell.KeyEnd,
+						tcell.KeyTab:
 					query.EventHandler(s, event)
-				case tcell.KeyUp, tcell.KeyDown:
+				case tcell.KeyUp, // navigate through the result set
+						tcell.KeyDown:
 					threads.EventHandler(s, event)
-				case tcell.KeyPgUp, tcell.KeyPgDn, tcell.KeyCtrlO:
+				case tcell.KeyPgUp, // page through the selected thread in view
+						tcell.KeyPgDn,
+						tcell.KeyCtrlO:
 					mails.EventHandler(s, event)
-				case tcell.KeyEscape:
+				case tcell.KeyEscape: // terminate epistula
 					running = false
-				case tcell.KeyCtrlA, tcell.KeyCtrlS:
+				case tcell.KeyCtrlA, // archive thread
+						tcell.KeyCtrlS: // mark thread as spam
 					threads.EventHandler(s, ev)
 					query.notify(s, true)
-				case tcell.KeyCtrlC:
-					compose()
-				case tcell.KeyCtrlR:
+				case tcell.KeyCtrlC: // compose new email
+					mails.compose()
+				case tcell.KeyCtrlR: // reply to selected email
 					if mailfilename := mails.GetSelectedMailFilename(); mailfilename != "" {
-						reply(mailfilename)
+						mails.reply(mailfilename)
 					}
-				case tcell.KeyCtrlB:
+				case tcell.KeyCtrlB: // test alert
 					s.Beep()
-				case tcell.KeyCtrlL:
+				case tcell.KeyCtrlL: // refresh screen
 					s.Sync()
 				}
 			case *tcell.EventMouse:
@@ -168,52 +178,18 @@ func main() {
 				status.EventHandler(s, event)
 			case *EventThreadsThread: // threads report new selected thread -> threads
 				mails.EventHandler(s, event)
-			case *EventSignal:
+			case *EventSignal: // handle signals
 				switch ev.sig {
-				case syscall.SIGHUP:
+				case syscall.SIGHUP: // reread config
 					config = NewConfig()
-				case syscall.SIGUSR1:
+				case syscall.SIGUSR1: // refresh result set
 					query.notify(s, true)
-				case syscall.SIGUSR2:
+				case syscall.SIGUSR2: //
 					//
 				}
 			}
 		}
 	}
-}
-
-func compose() {
-	cwd,_ := os.Getwd()
-	cmd := exec.Command("gnome-terminal",
-		"--wait",
-		"--hide-menubar",
-		"--working-directory=" + cwd,
-		"--",
-		"../composer/epistula-composer",
-			"--from=" + from,
-		)
-	go cmd.Run()
-}
-
-func reply(mailfilename string) {
-	log.Printf("reply %s", mailfilename)
-	cwd,_ := os.Getwd()
-	cmd := exec.Command("gnome-terminal",
-		"--wait",
-		"--hide-menubar",
-		"--working-directory=" + cwd,
-		"--",
-		"../composer/epistula-composer",
-			"--from=",
-			"--reply-text=",
-			"--reply-message-id=",
-			// TODO ML
-			"--to=",
-			"--subject=",
-			"--cc=",
-			"--bcc=",
-		)
-	go cmd.Run()
 }
 
 type Area struct {

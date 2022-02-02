@@ -95,7 +95,7 @@ func (this *Threads) doDown(down bool) bool {
 }
 
 func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
-	log.Printf("Threads.EventHandler %v", event)
+	// log.Printf("Threads.EventHandler %v", event)
 	old_index := this.selected_index
 	switch ev := event.(type) {
 	case *tcell.EventKey:
@@ -175,7 +175,7 @@ func (this *Threads) do_query(s tcell.Screen, query string, refresh bool) {
 				var thread *notmuch.Thread
 				for threads.Next(&thread) {
 					defer thread.Close()
-					log.Printf("%d: %v", count, thread.Subject())
+					// log.Printf("%d: %v", count, thread.Subject())
 					this.threadEntries[count] = newThreadEntry(thread)
 					if count >= this.filtered_t { // assertion
 						panic("more threads than reported")

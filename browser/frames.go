@@ -32,7 +32,7 @@ func (this *Frames) Draw(s tcell.Screen) (ret bool) {
 }
 
 func (this *Frames) EventHandler(s tcell.Screen, event tcell.Event) {
-	log.Printf("Frames.EventHandler %v", event)
+	// log.Printf("Frames.EventHandler %v", event)
 	switch event.(type) {
 	case *tcell.EventResize:
 		s.Sync()

@@ -27,6 +27,7 @@ type Mails struct {
 	paged_y int // offset into mails
 	textlinelimit int // count of lines of text initially shown
 	selected_index_message int // which message is selected (default: first unread)
+	selected_message_filename string // cache the filename of the selected message (for reply)
 	selected_index_part int // which part in that message is selected (default: first plain text)
 	count_of_lines int
 	cache map[IntPair]IntPair // cache of positions of open/close controls
@@ -199,10 +200,13 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 					for messages.Next(&message) {
 						defer message.Close()
 						{
-							envelope := parseMessage(message)
+							envelope := parseMessage(message.Filename())
 							defer envelope.Close()
 							isencrypted := MessageHasTag(message, "encrypted")
 							selected := index_message == this.selected_index_message
+							if selected {
+								this.selected_message_filename = message.Filename()
+							}
 							py = this.drawMessage(s, px, py, envelope, decryptMessage(message, selected && isencrypted), index_message, isencrypted, selected)
 						}
 						index_message++
@@ -228,7 +232,7 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 }
 
 func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
-	log.Printf("Mails.EventHandler %#v", event)
+	// log.Printf("Mails.EventHandler %#v", event)
 	switch ev := event.(type) {
 	case *EventThreadsThread:
 		this.ThreadEntry = ev.ThreadEntry
@@ -290,7 +294,7 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 			this.dirty = true
 		}
 	}
-	log.Printf("Mails.EventHandler %#v", this)
+	// log.Printf("Mails.EventHandler %#v", this)
 }
 
 func (this *Mails) GetSelectedMailFilename() string {
@@ -344,8 +348,76 @@ func (this *Mails) GetSelectedMailFilename() string {
 	return ""
 }
 
-func parseMessage(message *notmuch.Message) *gmime.Envelope {
-	if fh, err := os.Open(message.Filename()); err != nil {
+func (this *Mails) compose() {
+	cwd,_ := os.Getwd()
+	cmd := exec.Command("gnome-terminal",
+		"--wait",
+		"--hide-menubar",
+		"--working-directory=" + cwd,
+		"--",
+		"../composer/epistula-composer",
+		)
+	go cmd.Run()
+}
+
+func (this *Mails) reply(message_filename string) {
+	log.Printf("reply %s", message_filename)
+	var text, id, to, subject, cc, tempfilename string
+	envelope := parseMessage(message_filename)
+	defer envelope.Close()
+	index_message_part := 0
+	if err := envelope.Walk(func (part *gmime.Part) error {
+		if index_message_part == this.selected_index_part {
+			if part.IsText() {
+				if part.ContentType() == "text/plain" {
+					text = part.Text()
+				} else if part.ContentType() == "text/html" {
+					text, _ = HtmlToPlaintext(part.Text())
+				} else if part.ContentType() == "text/calendar" {
+					text, _ = ICalToPlaintext(part.Text())
+				} else {
+					log.Printf("unknown text type %s", part.ContentType())
+				}
+			}
+		}
+		index_message_part++
+		return nil
+	}); err != nil {
+		panic(nil)
+	}
+	id = envelope.Header("Message-ID")
+	subject = envelope.Header("Subject")
+	to = envelope.Header("To")
+	cc = envelope.Header("Cc")
+	if f, err := os.CreateTemp("", "epistula-browser-"); err != nil {
+		log.Fatal(err)
+	} else {
+		if _, err := f.Write([]byte(text)); err != nil {
+			log.Fatal(err)
+		}
+		if err := f.Close(); err != nil {
+			log.Fatal(err)
+		}
+		tempfilename = f.Name()
+	}
+	cwd,_ := os.Getwd()
+	cmd := exec.Command("gnome-terminal",
+		"--wait",
+		"--hide-menubar",
+		"--working-directory=" + cwd,
+		"--",
+		"../composer/epistula-composer",
+			"--reply-text=" + tempfilename ,
+			"--reply-message-id=" + id,
+			"--to=" + to,
+			"--subject=" + subject,
+			"--cc=" + cc,
+		)
+	go cmd.Run()
+}
+
+func parseMessage(filename string) *gmime.Envelope {
+	if fh, err := os.Open(filename); err != nil {
 		panic(err)
 	} else {
 		defer fh.Close()
