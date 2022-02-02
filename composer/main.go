@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math/rand"
 	"os"
 	"time"
 	"fmt"
@@ -38,7 +39,7 @@ func main() {
 	config := NewConfig()
 	// The Idea is as follows: the composeser
 	// - is called with all information in its arguments like --from, --to, --subject, --cc, --bcc, ...
-	var origin_to, origin_reply_to, origin_from, origin_cc, origin_bcc, origin_subject, origin_message_id, content_text string
+	var origin_to, origin_reply_to, origin_from, origin_cc, origin_bcc, origin_subject, origin_message_id, origin_references, content_text string
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {
 			x := strings.Split(os.Args[i][2:], "=")
@@ -47,6 +48,7 @@ func main() {
 			case "cc": origin_cc = x[1]
 			case "from": origin_from = x[1]
 			case "message-id": origin_message_id = x[1]
+			case "references": origin_references = x[1]
 			case "reply-to": origin_reply_to = x[1]
 			case "subject": origin_subject = x[1]
 			case "to": origin_to = x[1]
@@ -146,7 +148,7 @@ func main() {
 			}
 		}
 	// - parses the file via gmime
-		message = parseFile(tempfilename)
+		message = ParseFile(tempfilename)
 		status := message.Header("X-Epistula-Status")
 		done = !strings.Contains(status, "not")
 		abort = strings.Contains(status, "abort")
@@ -155,6 +157,7 @@ func main() {
 		// the user flagged the message to be aborted
 		os.Exit(0)
 	}
+	message.RemoveHeader("Fcc")
 	message.RemoveHeader("X-Epistula-Status")
 	message.RemoveHeader("X-Epistula-Comment")
 	message.RemoveHeader("X-Epistula-Attachment") // TODO add attachment
@@ -164,11 +167,14 @@ func main() {
 	message.SetHeader("Content-Type", "text/plain; charset=utf-8")
 	message.SetHeader("Content-Transfer-Encoding", "quoted-printable")
 	message.SetHeader("In-Reply-To", origin_message_id)
+	//if origin_references == "" && origin_in_reply_to == "" -- rfc2822?!?
+	//
+	message.SetHeader("References", origin_references + origin_message_id)
+	message.SetHeader("Message-ID", MessageId(config.user_primary_email))
 	// message.SetHeader("Content-ID", )
-	// message.SetHeader("Message-ID", )
-	// message.SetHeader("References", )
-	// message.SetHeader("Return-Path", )
 	// message.SetHeader("Thread-Topic", )
+	// message.SetHeader("Comments", )
+	// message.SetHeader("Keywords", )
 	// - retreives the desired keys
 	// - encrypts the file via gpgme
 	// - sends the email
@@ -192,7 +198,7 @@ func main() {
 		}
 	}
 	// - saves the email in maildir and kicks off notmuch new, tag 'sent'
-	cmd = exec.Command("notmuch", "insert", "+sent", )
+	cmd = exec.Command("notmuch", "insert", "+sent", "+inbox")
 	if stdin, err := cmd.StdinPipe(); err != nil {
 		log.Fatal(err)
 	} else {
@@ -208,7 +214,7 @@ func main() {
 	}
 }
 
-func parseFile(filename string) *gmime.Envelope {
+func ParseFile(filename string) *gmime.Envelope {
 	if fh, err := os.Open(filename); err != nil {
 		return nil
 	} else {
@@ -226,3 +232,6 @@ func parseFile(filename string) *gmime.Envelope {
 	return nil
 }
 
+func MessageId(email string) string {
+	return fmt.Sprintf("%x@%s", rand.Uint64(), strings.Split(email, "@")[1])
+}
