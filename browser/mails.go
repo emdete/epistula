@@ -354,10 +354,7 @@ func (this *Mails) compose() {
 
 func (this *Mails) reply(message_filename string) {
 	log.Printf("reply %s", message_filename)
-	envelope := decryptMessage(message_filename, true)
-	if envelope == nil { // TODO use a flag from notmuch
-		envelope = parseMessage(message_filename)
-	}
+	envelope := parseMessage(message_filename)
 	defer envelope.Close()
 	cc := envelope.Header("Cc")
 	from := envelope.Header("From")
@@ -365,8 +362,10 @@ func (this *Mails) reply(message_filename string) {
 	reply_to := envelope.Header("Reply-To")
 	subject := envelope.Subject()
 	to := envelope.Header("To")
-	log.Printf("message_id=%s", message_id)
 	var text string
+	if e := decryptMessage(message_filename, true); envelope != nil {
+		envelope = e
+	}
 	index_message_part := 0
 	if err := envelope.Walk(func (part *gmime.Part) error {
 		log.Printf("index_message_part=%s %s", index_message_part, part.ContentType())
@@ -388,7 +387,6 @@ func (this *Mails) reply(message_filename string) {
 	}); err != nil {
 		panic(nil)
 	}
-	log.Printf("text=%s", text)
 	var tempfilename string
 	if f, err := os.CreateTemp("", "epistula-browser-"); err != nil {
 		log.Fatal(err)
@@ -401,7 +399,7 @@ func (this *Mails) reply(message_filename string) {
 		}
 		tempfilename = f.Name()
 	}
-	log.Printf("tempfilename=%s", tempfilename)
+	//log.Printf("cc=%s,from=%s,message_id=%s,reply_to=%s,subject=%s,to=%s, tempfilename=%s", cc, from, message_id, reply_to, subject, to, tempfilename)
 	cwd,_ := os.Getwd()
 	cmd := exec.Command("gnome-terminal",
 		"--wait",
