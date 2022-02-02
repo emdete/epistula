@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
+	//
 	"github.com/gdamore/tcell/v2/encoding"
 	// see ~/go/pkg/mod/github.com/mattn/go-runewidth@v0.0.14-0.20210830053702-dc8fe66265af/
 	"github.com/mattn/go-runewidth"
@@ -118,7 +119,9 @@ func main() {
 		//
 		running := true
 		for running {
-			updateScreen(s)
+			if !s.HasPendingEvent() {
+				updateScreen(s)
+			}
 			event := s.PollEvent()
 			switch ev := event.(type) {
 			case *tcell.EventKey:
