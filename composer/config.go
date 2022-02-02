@@ -1,0 +1,1 @@
+../browser/config.go

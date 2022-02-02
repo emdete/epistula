@@ -19,15 +19,29 @@ const (
 	EDITOR = "nvim"
 )
 
+func _log() {
+	log.SetPrefix("epistula ")
+	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
+	if f, err := os.OpenFile("/tmp/c.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
+		log.SetOutput(os.Stderr)
+		log.Fatal(err)
+	} else {
+		log.SetOutput(f)
+	}
+}
+
 func main() {
+	// log
+	_log()
+	log.Printf("main")
+	//
+	config := NewConfig()
 	// args
-	var meta_from, meta_to, meta_cc, meta_bcc, meta_subject, meta_reply_message_id, content_text string
+	var meta_to, meta_cc, meta_bcc, meta_subject, meta_reply_message_id, content_text string
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {
 			x := strings.Split(os.Args[i][2:], "=")
 			switch x[0] {
-			case "from":
-				meta_from = x[1]
 			case "to":
 				meta_to = x[1]
 			case "cc":
@@ -36,7 +50,7 @@ func main() {
 				meta_bcc = x[1]
 			case "subject":
 				meta_subject = x[1]
-			case "reply-message-id=":
+			case "reply-message-id":
 				meta_reply_message_id = x[1]
 			case "reply-text":
 				if fh, err := os.Open(x[1]); err != nil {
@@ -49,6 +63,7 @@ func main() {
 						content_text = string(data)
 					}
 				}
+				defer os.Remove(x[1]) // clean up
 			default:
 				log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
 			}
@@ -57,17 +72,8 @@ func main() {
 		}
 	}
 	// title
-	title := "Epistula Composer: " + meta_from + " to " + meta_to
+	title := "Epistula Composer: " + config.user_name + " <" + config.user_primary_email + ">" + " to " + meta_to
 	os.Stdout.Write([]byte("\x1b]1;"+title+"\a\x1b]2;"+title+"\a"))
-	//
-	log.SetPrefix("email ")
-	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
-	if fs, err := os.Create("/tmp/c.log"); err != nil {
-		log.SetOutput(os.Stderr)
-	} else {
-		log.SetOutput(fs)
-	}
-	log.Printf("main %#v", os.Args)
 	// The Idea is as follows: the composeser
 	// - is called with all information in its arguments like --from, --reply, --to, --subject, --cc, --bcc, ...
 	// - composes an email via gmime
@@ -78,13 +84,13 @@ func main() {
 	// it
 	if message, err := gmime.Parse(
 		"Date: " + date_string + CRLF +
-		"From: " + meta_from + CRLF +
+		"From: " + config.user_name + " <" + config.user_primary_email + ">" + CRLF +
 		CRLF +
 		CRLF); err != nil {
 		log.Fatal(err)
 	} else {
 		message.ClearAddress("From")
-		message.ParseAndAppendAddresses("From", meta_from)
+		message.ParseAndAppendAddresses("From", config.user_name + " <" + config.user_primary_email + ">")
 		message.ParseAndAppendAddresses("To", meta_to) // TODO how to add an empty "To:", .. ?
 		message.ParseAndAppendAddresses("Cc", meta_cc)
 		message.ParseAndAppendAddresses("Bcc", meta_bcc)
@@ -114,7 +120,6 @@ func main() {
 	if f, err := os.CreateTemp("", "epistula-composer-"); err != nil {
 		log.Fatal(err)
 	} else {
-		defer os.Remove(f.Name()) // clean up
 		if _, err := f.Write(buffer); err != nil {
 			log.Fatal(err)
 		}
@@ -183,7 +188,7 @@ func main() {
 			log.Printf("%s\n", out)
 		}
 	}
-	// - saves the email in maildir and kicks off notmuch new
+	// - saves the email in maildir and kicks off notmuch new, tag 'sent'
 	//
 	// because the exported (for edit) email includes all meta data the program can add
 	// x-epistula-* meta data that "talks to the user", for example telling her
