@@ -362,9 +362,14 @@ func (this *Mails) compose() {
 
 func (this *Mails) reply(message_filename string) {
 	log.Printf("reply %s", message_filename)
-	var text, id, to, subject, cc, tempfilename string
 	envelope := parseMessage(message_filename)
 	defer envelope.Close()
+	id := envelope.Header("Message-ID")
+	subject := envelope.Subject()
+	to := envelope.Header("To")
+	from := envelope.Header("From")
+	cc := envelope.Header("Cc")
+	var text string
 	index_message_part := 0
 	if err := envelope.Walk(func (part *gmime.Part) error {
 		if index_message_part == this.selected_index_part {
@@ -385,10 +390,7 @@ func (this *Mails) reply(message_filename string) {
 	}); err != nil {
 		panic(nil)
 	}
-	id = envelope.Header("Message-ID")
-	subject = envelope.Header("Subject")
-	to = envelope.Header("To")
-	cc = envelope.Header("Cc")
+	var tempfilename string
 	if f, err := os.CreateTemp("", "epistula-browser-"); err != nil {
 		log.Fatal(err)
 	} else {
@@ -409,6 +411,7 @@ func (this *Mails) reply(message_filename string) {
 		"../composer/epistula-composer",
 			"--reply-text=" + tempfilename ,
 			"--reply-message-id=" + id,
+			"--from=" + from,
 			"--to=" + to,
 			"--subject=" + subject,
 			"--cc=" + cc,
