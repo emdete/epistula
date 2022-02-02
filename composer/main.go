@@ -39,7 +39,7 @@ func main() {
 	config := NewConfig()
 	// The Idea is as follows: the composeser
 	// - is called with all information in its arguments like --from, --to, --subject, --cc, --bcc, ...
-	var origin_to, origin_reply_to, origin_from, origin_cc, origin_bcc, origin_subject, origin_message_id, origin_references, content_text string
+	var origin_to, origin_reply_to, origin_from, origin_cc, origin_bcc, origin_subject, origin_in_reply_to, origin_message_id, origin_references, content_text string
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {
 			x := strings.Split(os.Args[i][2:], "=")
@@ -50,6 +50,7 @@ func main() {
 			case "message-id": origin_message_id = x[1]
 			case "references": origin_references = x[1]
 			case "reply-to": origin_reply_to = x[1]
+			case "in-reply-to": origin_in_reply_to = x[1]
 			case "subject": origin_subject = x[1]
 			case "to": origin_to = x[1]
 			case "text":
@@ -74,8 +75,16 @@ func main() {
 	if origin_reply_to == "" {
 		origin_reply_to = origin_from
 	}
-	log.Printf("origin_to=%s, origin_reply_to=%s, origin_from=%s, origin_cc=%s, origin_bcc=%s, origin_subject=%s, origin_message_id=%s, content_text=%s, ",
-		origin_to, origin_reply_to, origin_from, origin_cc, origin_bcc, origin_subject, origin_message_id, content_text)
+	log.Printf("origin_to=%s, origin_reply_to=%s, origin_from=%s, origin_cc=%s, origin_bcc=%s, origin_subject=%s, origin_message_id=%s, origin_reply_to=%s, ",
+		origin_to,
+		origin_reply_to,
+		origin_from,
+		origin_cc,
+		origin_bcc,
+		origin_subject,
+		origin_message_id,
+		origin_in_reply_to,
+	)
 	// - composes an email via gmime
 	var buffer []byte
 	date_string := time.Now().Format(time.RFC1123Z)
@@ -152,6 +161,15 @@ func main() {
 		status := message.Header("X-Epistula-Status")
 		done = !strings.Contains(status, "not")
 		abort = strings.Contains(status, "abort")
+		if done {
+			// check To: field
+			if to := message.Header("To"); to == "" {
+				log.Printf("To: is empty")
+				done = false
+			// create message
+			// rewrite temp file
+			}
+		}
 	}
 	if abort {
 		// the user flagged the message to be aborted
@@ -168,7 +186,6 @@ func main() {
 	message.SetHeader("Content-Transfer-Encoding", "quoted-printable")
 	message.SetHeader("In-Reply-To", origin_message_id)
 	//if origin_references == "" && origin_in_reply_to == "" -- rfc2822?!?
-	//
 	message.SetHeader("References", origin_references + origin_message_id)
 	message.SetHeader("Message-ID", MessageId(config.user_primary_email))
 	// message.SetHeader("Content-ID", )
@@ -233,5 +250,5 @@ func ParseFile(filename string) *gmime.Envelope {
 }
 
 func MessageId(email string) string {
-	return fmt.Sprintf("%x@%s", rand.Uint64(), strings.Split(email, "@")[1])
+	return fmt.Sprintf("<%x.%x@%s>", rand.Uint64(), rand.Uint64(), strings.Split(email, "@")[1])
 }
