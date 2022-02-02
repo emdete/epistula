@@ -11,6 +11,8 @@ TODOs
 - write own mails to maildir & kick off notmuch new
 - keep cursor position on refresh; know index by item, not number
 - show tags per thread, email
+- the composer should be able to reply on multiple emails.
+- the "replied" tag must be set somewhere on the originated mail
 
 see also
 --

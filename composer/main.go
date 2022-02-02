@@ -23,11 +23,11 @@ func _log() {
 	log.SetPrefix("epistula ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
 	if f, err := os.OpenFile("/tmp/c.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
-		log.SetOutput(os.Stderr)
 		log.Fatal(err)
 	} else {
-		log.SetOutput(f)
+		os.Stderr = f
 	}
+	log.SetOutput(os.Stderr)
 }
 
 func main() {
@@ -36,25 +36,21 @@ func main() {
 	log.Printf("main")
 	//
 	config := NewConfig()
-	// args
-	var meta_to, meta_from, meta_cc, meta_bcc, meta_subject, meta_reply_message_id, content_text string
+	// The Idea is as follows: the composeser
+	// - is called with all information in its arguments like --from, --to, --subject, --cc, --bcc, ...
+	var meta_to, meta_reply_to, meta_from, meta_cc, meta_bcc, meta_subject, meta_message_id, content_text string
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {
 			x := strings.Split(os.Args[i][2:], "=")
 			switch x[0] {
-			case "to":
-				meta_to = x[1]
-			case "from":
-				meta_from = x[1]
-			case "cc":
-				meta_cc = x[1]
-			case "bcc":
-				meta_bcc = x[1]
-			case "subject":
-				meta_subject = x[1]
-			case "reply-message-id":
-				meta_reply_message_id = x[1]
-			case "reply-text":
+			case "bcc": meta_bcc = x[1]
+			case "cc": meta_cc = x[1]
+			case "from": meta_from = x[1]
+			case "message-id": meta_message_id = x[1]
+			case "reply-to": meta_reply_to = x[1]
+			case "subject": meta_subject = x[1]
+			case "to": meta_to = x[1]
+			case "text":
 				if fh, err := os.Open(x[1]); err != nil {
 					log.Fatal(err)
 				} else {
@@ -73,17 +69,15 @@ func main() {
 			log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
 		}
 	}
-	// title
-	title := "Epistula Composer: " + config.user_name + " <" + config.user_primary_email + ">" + " to " + meta_to
-	os.Stdout.Write([]byte("\x1b]1;"+title+"\a\x1b]2;"+title+"\a"))
-	// The Idea is as follows: the composeser
-	// - is called with all information in its arguments like --from, --reply, --to, --subject, --cc, --bcc, ...
+	if meta_reply_to == "" {
+		meta_reply_to = meta_from
+	}
 	// - composes an email via gmime
 	var buffer []byte
 	date_string := time.Now().Format(time.RFC1123Z)
 	// go-gmime doesnt support creation of envelopes or parts in envelopes yet.
 	// so we create an empty dummy email and modify the elements after parsing
-	// it
+	// that
 	if message, err := gmime.Parse(
 		"Date: " + date_string + CRLF +
 		"From: " + config.user_name + " <" + config.user_primary_email + ">" + CRLF +
@@ -93,8 +87,8 @@ func main() {
 	} else {
 		message.ClearAddress("From")
 		message.ParseAndAppendAddresses("From", config.user_name + " <" + config.user_primary_email + ">")
-		message.ParseAndAppendAddresses("To", meta_from) // TODO how to add an empty "To:", .. ?
-		message.ParseAndAppendAddresses("To", meta_to)
+		message.ParseAndAppendAddresses("To", meta_reply_to) // TODO how to add an empty "To:", .. ?
+		message.ParseAndAppendAddresses("To", meta_to) // if multiple to: exist reply to all of them
 		// TODO remove myself
 		message.ParseAndAppendAddresses("Cc", meta_cc)
 		message.ParseAndAppendAddresses("Bcc", meta_bcc)
@@ -134,7 +128,10 @@ func main() {
 	}
 	defer os.Remove(tempfilename)
 	// - execs the editor and waits for its termination
-	//if true { return }
+	// set terminal title
+	title := "Epistula Composer: " + config.user_name + " <" + config.user_primary_email + ">" + " to " + meta_reply_to
+	os.Stdout.Write([]byte("\x1b]1;"+title+"\a\x1b]2;"+title+"\a"))
+	//
 	var message *gmime.Envelope
 	done := false
 	abort := false
@@ -153,23 +150,23 @@ func main() {
 		abort = strings.Contains(status, "abort")
 	}
 	if abort {
+		// the user flagged the message to be aborted
 		os.Exit(0)
 	}
 	message.RemoveHeader("X-Epistula-Status")
 	message.RemoveHeader("X-Epistula-Comment")
 	message.RemoveHeader("X-Epistula-Attachment") // TODO add attachment
+	message.ParseAndAppendAddresses("Reply-To", config.user_primary_email)
 	message.SetHeader("MIME-Version", "1.0")
 	message.SetHeader("User-Agent", "Epistula")
 	message.SetHeader("Content-Type", "text/plain; charset=utf-8")
 	message.SetHeader("Content-Transfer-Encoding", "quoted-printable")
-	message.SetHeader("In-Reply-To", meta_reply_message_id)
-	// Content-ID
-	// Return-Path
-	// MIME-Version
-	// Message-ID
-	// References
-	// Return-Path
-	// Thread-Topic
+	message.SetHeader("In-Reply-To", meta_message_id)
+	// message.SetHeader("Content-ID", )
+	// message.SetHeader("Message-ID", )
+	// message.SetHeader("References", )
+	// message.SetHeader("Return-Path", )
+	// message.SetHeader("Thread-Topic", )
 	// - retreives the desired keys
 	// - encrypts the file via gpgme
 	// - sends the email
@@ -193,17 +190,20 @@ func main() {
 		}
 	}
 	// - saves the email in maildir and kicks off notmuch new, tag 'sent'
-	//
-	// because the exported (for edit) email includes all meta data the program can add
-	// x-epistula-* meta data that "talks to the user", for example telling her
-	// about missing public keys. it can contain as well a "i am not done" flag
-	// the user has to change to flag "done"
-	//
-	// the composer should be able to reply on multiple emails.
-	//
-	// open:
-	// - the "replied" flag must be set somewhere
-	// - attachments
+	cmd = exec.Command("notmuch", "insert", "+sent", )
+	if stdin, err := cmd.StdinPipe(); err != nil {
+		log.Fatal(err)
+	} else {
+		go func() {
+			defer stdin.Close()
+			stdin.Write(buffer)
+		}()
+		if out, err := cmd.CombinedOutput(); err != nil {
+			log.Fatal(err)
+		} else {
+			log.Printf("%s\n", out)
+		}
+	}
 }
 
 func parseFile(filename string) *gmime.Envelope {

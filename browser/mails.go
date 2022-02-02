@@ -359,12 +359,13 @@ func (this *Mails) reply(message_filename string) {
 		envelope = parseMessage(message_filename)
 	}
 	defer envelope.Close()
-	id := envelope.Header("Message-ID")
+	cc := envelope.Header("Cc")
+	from := envelope.Header("From")
+	message_id := envelope.Header("Message-ID")
+	reply_to := envelope.Header("Reply-To")
 	subject := envelope.Subject()
 	to := envelope.Header("To")
-	from := envelope.Header("From")
-	cc := envelope.Header("Cc")
-	log.Printf("id=%s", id)
+	log.Printf("message_id=%s", message_id)
 	var text string
 	index_message_part := 0
 	if err := envelope.Walk(func (part *gmime.Part) error {
@@ -408,12 +409,14 @@ func (this *Mails) reply(message_filename string) {
 		"--working-directory=" + cwd,
 		"--",
 		"../composer/epistula-composer",
-			"--reply-text=" + tempfilename ,
-			"--reply-message-id=" + id,
-			"--from=" + from,
-			"--to=" + to,
-			"--subject=" + subject,
+			"--bcc=",
 			"--cc=" + cc,
+			"--from=" + from,
+			"--message-id=" + message_id,
+			"--reply-to=" + reply_to,
+			"--subject=" + subject,
+			"--text=" + tempfilename ,
+			"--to=" + to,
 		)
 	go cmd.Run()
 }
