@@ -37,13 +37,15 @@ func main() {
 	//
 	config := NewConfig()
 	// args
-	var meta_to, meta_cc, meta_bcc, meta_subject, meta_reply_message_id, content_text string
+	var meta_to, meta_from, meta_cc, meta_bcc, meta_subject, meta_reply_message_id, content_text string
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {
 			x := strings.Split(os.Args[i][2:], "=")
 			switch x[0] {
 			case "to":
 				meta_to = x[1]
+			case "from":
+				meta_from = x[1]
 			case "cc":
 				meta_cc = x[1]
 			case "bcc":
@@ -91,7 +93,9 @@ func main() {
 	} else {
 		message.ClearAddress("From")
 		message.ParseAndAppendAddresses("From", config.user_name + " <" + config.user_primary_email + ">")
-		message.ParseAndAppendAddresses("To", meta_to) // TODO how to add an empty "To:", .. ?
+		message.ParseAndAppendAddresses("To", meta_from) // TODO how to add an empty "To:", .. ?
+		message.ParseAndAppendAddresses("To", meta_to)
+		// TODO remove myself
 		message.ParseAndAppendAddresses("Cc", meta_cc)
 		message.ParseAndAppendAddresses("Bcc", meta_bcc)
 		message.SetSubject(meta_subject)

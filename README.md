@@ -83,12 +83,14 @@ Using
 - navigating the result list of threads: Mouse-Left-Click, Mouse-Scroll, Key-Up/Down, Ctrl-Key-Up/Down (on the left)
 - navigating the list of mails: Key-Page-Up/Down, Ctrl-Key-PageUp/Down (on the right)
 - globally
-	- Ctrl-Key-C: Compose an email
-	- Ctrl-Key-R: Reply an email
-	- Ctrl-Key-L: Refresh screen
-	- Ctrl-Key-S: Tag as spam
 	- Ctrl-Key-A: Archive, untag inbox
+	- Ctrl-Key-B: Bounce (not done yet)
+	- Ctrl-Key-C: Compose an email
+	- Ctrl-Key-F: Forward (not done yet)
+	- Ctrl-Key-L: Refresh screen
 	- Ctrl-Key-O: Open further lines on a text part
+	- Ctrl-Key-R: Reply an email
+	- Ctrl-Key-S: Tag as spam
 
 Warning
 --

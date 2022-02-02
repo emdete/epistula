@@ -10,6 +10,7 @@ TODOs
 - check pure text parts for html artefacts `"&[^;]*;"`
 - write own mails to maildir & kick off notmuch new
 - keep cursor position on refresh; know index by item, not number
+- show tags per thread, email
 
 see also
 --
