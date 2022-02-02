@@ -359,6 +359,8 @@ func (this *Mails) reply(message_filename string) {
 	cc := envelope.Header("Cc")
 	from := envelope.Header("From")
 	message_id := envelope.Header("Message-ID")
+	references := envelope.Header("References")
+	in_reply_to := envelope.Header("In-Reply-To")
 	reply_to := envelope.Header("Reply-To")
 	subject := envelope.Subject()
 	to := envelope.Header("To")
@@ -411,7 +413,9 @@ func (this *Mails) reply(message_filename string) {
 			"--cc=" + cc,
 			"--from=" + from,
 			"--message-id=" + message_id,
+			"--references=" + references,
 			"--reply-to=" + reply_to,
+			"--in-reply-to=" + in_reply_to,
 			"--subject=" + subject,
 			"--text=" + tempfilename ,
 			"--to=" + to,
