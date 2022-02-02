@@ -199,7 +199,7 @@ func (this *Mails) Draw(s tcell.Screen) (ret bool) {
 							if selected {
 								this.selected_message_filename = message.Filename()
 							}
-							py = this.drawMessage(s, px, py, envelope, decryptMessage(message, selected && isencrypted), index_message, isencrypted, selected)
+							py = this.drawMessage(s, px, py, envelope, decryptMessage(message.Filename(), selected && isencrypted), index_message, isencrypted, selected)
 						}
 						index_message++
 						if replies, err := message.Replies(); err == nil {
@@ -354,16 +354,21 @@ func (this *Mails) compose() {
 
 func (this *Mails) reply(message_filename string) {
 	log.Printf("reply %s", message_filename)
-	envelope := parseMessage(message_filename)
+	envelope := decryptMessage(message_filename, true)
+	if envelope == nil { // TODO use a flag from notmuch
+		envelope = parseMessage(message_filename)
+	}
 	defer envelope.Close()
 	id := envelope.Header("Message-ID")
 	subject := envelope.Subject()
 	to := envelope.Header("To")
 	from := envelope.Header("From")
 	cc := envelope.Header("Cc")
+	log.Printf("id=%s", id)
 	var text string
 	index_message_part := 0
 	if err := envelope.Walk(func (part *gmime.Part) error {
+		log.Printf("index_message_part=%s %s", index_message_part, part.ContentType())
 		if index_message_part == this.selected_index_part {
 			if part.IsText() {
 				if part.ContentType() == "text/plain" {
@@ -382,6 +387,7 @@ func (this *Mails) reply(message_filename string) {
 	}); err != nil {
 		panic(nil)
 	}
+	log.Printf("text=%s", text)
 	var tempfilename string
 	if f, err := os.CreateTemp("", "epistula-browser-"); err != nil {
 		log.Fatal(err)
@@ -394,6 +400,7 @@ func (this *Mails) reply(message_filename string) {
 		}
 		tempfilename = f.Name()
 	}
+	log.Printf("tempfilename=%s", tempfilename)
 	cwd,_ := os.Getwd()
 	cmd := exec.Command("gnome-terminal",
 		"--wait",

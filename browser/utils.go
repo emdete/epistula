@@ -38,11 +38,11 @@ func parseMessage(filename string) *gmime.Envelope {
 	return nil
 }
 
-func decryptMessage(message *notmuch.Message, decrypt bool) *gmime.Envelope {
+func decryptMessage(filename string, decrypt bool) *gmime.Envelope {
 	if !decrypt {
 		return nil
 	}
-	if stream, err := os.Open(message.Filename()); err != nil {
+	if stream, err := os.Open(filename); err != nil {
 		panic(err)
 	} else {
 		if fh, err := gpgme.Decrypt(stream); err != nil {
