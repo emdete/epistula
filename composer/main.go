@@ -38,18 +38,18 @@ func main() {
 	config := NewConfig()
 	// The Idea is as follows: the composeser
 	// - is called with all information in its arguments like --from, --to, --subject, --cc, --bcc, ...
-	var meta_to, meta_reply_to, meta_from, meta_cc, meta_bcc, meta_subject, meta_message_id, content_text string
+	var origin_to, origin_reply_to, origin_from, origin_cc, origin_bcc, origin_subject, origin_message_id, content_text string
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {
 			x := strings.Split(os.Args[i][2:], "=")
 			switch x[0] {
-			case "bcc": meta_bcc = x[1]
-			case "cc": meta_cc = x[1]
-			case "from": meta_from = x[1]
-			case "message-id": meta_message_id = x[1]
-			case "reply-to": meta_reply_to = x[1]
-			case "subject": meta_subject = x[1]
-			case "to": meta_to = x[1]
+			case "bcc": origin_bcc = x[1]
+			case "cc": origin_cc = x[1]
+			case "from": origin_from = x[1]
+			case "message-id": origin_message_id = x[1]
+			case "reply-to": origin_reply_to = x[1]
+			case "subject": origin_subject = x[1]
+			case "to": origin_to = x[1]
 			case "text":
 				if fh, err := os.Open(x[1]); err != nil {
 					log.Fatal(err)
@@ -69,9 +69,11 @@ func main() {
 			log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
 		}
 	}
-	if meta_reply_to == "" {
-		meta_reply_to = meta_from
+	if origin_reply_to == "" {
+		origin_reply_to = origin_from
 	}
+	log.Printf("origin_to=%s, origin_reply_to=%s, origin_from=%s, origin_cc=%s, origin_bcc=%s, origin_subject=%s, origin_message_id=%s, content_text=%s, ",
+		origin_to, origin_reply_to, origin_from, origin_cc, origin_bcc, origin_subject, origin_message_id, content_text)
 	// - composes an email via gmime
 	var buffer []byte
 	date_string := time.Now().Format(time.RFC1123Z)
@@ -87,12 +89,12 @@ func main() {
 	} else {
 		message.ClearAddress("From")
 		message.ParseAndAppendAddresses("From", config.user_name + " <" + config.user_primary_email + ">")
-		message.ParseAndAppendAddresses("To", meta_reply_to) // TODO how to add an empty "To:", .. ?
-		message.ParseAndAppendAddresses("To", meta_to) // if multiple to: exist reply to all of them
+		message.ParseAndAppendAddresses("To", origin_reply_to) // TODO how to add an empty "To:", .. ?
+		message.ParseAndAppendAddresses("To", origin_to) // if multiple to: exist reply to all of them
 		// TODO remove myself
-		message.ParseAndAppendAddresses("Cc", meta_cc)
-		message.ParseAndAppendAddresses("Bcc", meta_bcc)
-		message.SetSubject(meta_subject)
+		message.ParseAndAppendAddresses("Cc", origin_cc)
+		message.ParseAndAppendAddresses("Bcc", origin_bcc)
+		message.SetSubject(origin_subject)
 		message.SetHeader("X-Epistula-Status", "I am not done")
 		message.SetHeader("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'. Add a 'abort' to abort sending (editings lost).")
 		message.SetHeader("X-Epistula-Attachment", "#sample entry#")
@@ -129,7 +131,7 @@ func main() {
 	defer os.Remove(tempfilename)
 	// - execs the editor and waits for its termination
 	// set terminal title
-	title := "Epistula Composer: " + config.user_name + " <" + config.user_primary_email + ">" + " to " + meta_reply_to
+	title := "Epistula Composer: " + config.user_name + " <" + config.user_primary_email + ">" + " to " + origin_reply_to
 	os.Stdout.Write([]byte("\x1b]1;"+title+"\a\x1b]2;"+title+"\a"))
 	//
 	var message *gmime.Envelope
@@ -161,7 +163,7 @@ func main() {
 	message.SetHeader("User-Agent", "Epistula")
 	message.SetHeader("Content-Type", "text/plain; charset=utf-8")
 	message.SetHeader("Content-Transfer-Encoding", "quoted-printable")
-	message.SetHeader("In-Reply-To", meta_message_id)
+	message.SetHeader("In-Reply-To", origin_message_id)
 	// message.SetHeader("Content-ID", )
 	// message.SetHeader("Message-ID", )
 	// message.SetHeader("References", )
