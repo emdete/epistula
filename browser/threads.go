@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"fmt"
-	"errors"
 	"time"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
@@ -276,69 +275,5 @@ func (this *Threads) notifyThreadsStatus(s tcell.Screen, overall_t, overall_m, f
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
 	}
-}
-
-func ThreadHasTag(thread *notmuch.Thread, search string) bool {
-	tags := thread.Tags()
-	var tag *notmuch.Tag
-	for tags.Next(&tag) {
-		if tag.Value == search {
-			return true
-		}
-	}
-	return false
-}
-
-func ThreadAddTag(id, tag string) error {
-	if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadWrite); err != nil {
-		return err
-	} else {
-		defer db.Close()
-		query := db.NewQuery("thread:" + id)
-		defer query.Close()
-		if 1 != query.CountThreads() { return errors.New("not uniq") }
-		if threads, err := query.Threads(); err != nil {
-			return err
-		} else {
-			var thread *notmuch.Thread
-			if threads.Next(&thread) {
-				defer thread.Close()
-			}
-			messages := thread.Messages()
-			var message *notmuch.Message
-			for messages.Next(&message) {
-				if err := message.AddTag(tag); err != nil { return err }
-			}
-			if threads.Next(&thread) { return errors.New("additional thread") }
-		}
-	}
-	return nil
-}
-
-
-func ThreadRemoveTag(id, tag string) error {
-	if db, err := notmuch.Open(NotMuchDatabasePath, notmuch.DBReadWrite); err != nil {
-		return err
-	} else {
-		defer db.Close()
-		query := db.NewQuery("thread:" + id)
-		defer query.Close()
-		if 1 != query.CountThreads() { return errors.New("not uniq") }
-		if threads, err := query.Threads(); err != nil {
-			return err
-		} else {
-			var thread *notmuch.Thread
-			if threads.Next(&thread) {
-				defer thread.Close()
-			}
-			messages := thread.Messages()
-			var message *notmuch.Message
-			for messages.Next(&message) {
-				if err := message.RemoveTag(tag); err != nil { return err }
-			}
-			if threads.Next(&thread) { return errors.New("additional thread") }
-		}
-	}
-	return nil
 }
 
