@@ -236,6 +236,22 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		this.dirty = true
 	case *tcell.EventKey:
 		switch ev.Key() {
+		case tcell.KeyCtrlC: // compose new email
+			this.compose()
+		case tcell.KeyCtrlR: // reply to selected email
+			if mailfilename := mails.GetSelectedMailFilename(); mailfilename != "" {
+				mails.reply(mailfilename)
+			}
+		case tcell.KeyCtrlJ:
+			if this.selected_index_message+1 < this.count {
+				this.selected_index_message++
+				this.dirty = true
+			}
+		case tcell.KeyCtrlK:
+			if this.selected_index_message > 0 {
+				this.selected_index_message--
+				this.dirty = true
+			}
 		case tcell.KeyCtrlO:
 			this.textlinelimit += MAILS_TEXTLINELIMIT
 			this.dirty = true

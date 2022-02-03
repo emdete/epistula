@@ -135,26 +135,24 @@ func main() {
 						tcell.KeyHome,
 						tcell.KeyEnd,
 						tcell.KeyTab:
-					query.EventHandler(s, event)
+					query.EventHandler(s, ev)
 				case tcell.KeyUp, // navigate through the result set
 						tcell.KeyDown:
-					threads.EventHandler(s, event)
-				case tcell.KeyPgUp, // page through the selected thread in view
-						tcell.KeyPgDn,
-						tcell.KeyCtrlO:
-					mails.EventHandler(s, event)
-				case tcell.KeyEscape: // terminate epistula
-					running = false
+					threads.EventHandler(s, ev)
 				case tcell.KeyCtrlA, // archive thread
 						tcell.KeyCtrlS: // mark thread as spam
-					threads.EventHandler(s, ev)
-					query.notify(s, true)
-				case tcell.KeyCtrlC: // compose new email
-					mails.compose()
-				case tcell.KeyCtrlR: // reply to selected email
-					if mailfilename := mails.GetSelectedMailFilename(); mailfilename != "" {
-						mails.reply(mailfilename)
-					}
+					threads.EventHandler(s, ev) // we have to do this separate cause we need to
+					query.notify(s, true) // notify via query which isnt available in threads
+				case tcell.KeyPgUp, // page through the selected thread in view
+						tcell.KeyPgDn, //
+						tcell.KeyCtrlO, // open more lines of the selected mail
+						tcell.KeyCtrlJ, // next mail in thread
+						tcell.KeyCtrlK, // previous mail in thread
+						tcell.KeyCtrlR, // reply to selected email
+						tcell.KeyCtrlC: // compose new email
+					mails.EventHandler(s, ev)
+				case tcell.KeyEscape: // terminate epistula
+					running = false
 				case tcell.KeyCtrlB: // test alert
 					s.Beep()
 				case tcell.KeyCtrlL: // refresh screen
