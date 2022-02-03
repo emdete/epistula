@@ -5,8 +5,8 @@ import (
 	// "fmt"
 	// "io"
 	// "io/ioutil"
-	// "log"
-	// "os"
+	"log"
+	"os"
 	// "os/exec"
 	// "os/signal"
 	// "regexp"
@@ -22,6 +22,9 @@ import (
 	)
 
 func main() {
+	log.SetPrefix("epistula ")
+	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
+	log.SetOutput(os.Stderr)
 	if err := Test(); err != nil {
 		panic(err)
 	}
