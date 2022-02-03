@@ -229,6 +229,7 @@ func main() {
 			log.Printf("%s\n", out)
 		}
 	}
+	// TODO send USR1 to browser to notify of db change
 }
 
 func ParseFile(filename string) *gmime.Envelope {
