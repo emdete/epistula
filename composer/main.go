@@ -250,5 +250,5 @@ func ParseFile(filename string) *gmime.Envelope {
 }
 
 func MessageId(email string) string {
-	return fmt.Sprintf("<%x.%x@%s>", rand.Uint64(), rand.Uint64(), strings.Split(email, "@")[1])
+	return fmt.Sprintf("<epistula-%x-%x@%s>", rand.Uint64(), rand.Uint64(), strings.Split(email, "@")[1])
 }
