@@ -3,6 +3,8 @@ Epistula
 
 The original source is maintained at [codeberg](https://codeberg.org/mdt/epistula), please do PRs & issues here.
 
+Matters can be discussed in a Matrix room #epistula:emdete.de and IRC on libera #epistula.
+
 Itching
 --
 
