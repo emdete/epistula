@@ -23,7 +23,7 @@ const (
 func _log() {
 	log.SetPrefix("epistula ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
-	if f, err := os.OpenFile("/tmp/c.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
+	if f, err := os.OpenFile("/tmp/epistula-composer.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
 		log.Fatal(err)
 	} else {
 		os.Stderr = f
@@ -37,7 +37,8 @@ func main() {
 	log.Printf("main")
 	//
 	config := NewConfig()
-	// The Idea is as follows: the composeser
+	rand.Seed(time.Now().UnixMilli())
+	// The Idea is as follows: the composer
 	// - is called with all information in its arguments like --from, --to, --subject, --cc, --bcc, ...
 	var origin_to, origin_reply_to, origin_from, origin_cc, origin_bcc, origin_subject, origin_in_reply_to, origin_message_id, origin_references, content_text string
 	for i:=1;i<len(os.Args);i++ {
@@ -55,21 +56,25 @@ func main() {
 			case "to": origin_to = x[1]
 			case "text":
 				if fh, err := os.Open(x[1]); err != nil {
-					log.Fatal(err)
+					panic(err)
 				} else {
 					defer fh.Close()
 					if data, err := ioutil.ReadAll(bufio.NewReader(fh)); err != nil {
-						log.Fatal(err)
+						panic(err)
 					} else {
 						content_text = string(data)
 					}
 				}
 				defer os.Remove(x[1]) // clean up
 			default:
-				log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
+				panic(fmt.Sprintf("wrong arg: %s", os.Args[i]))
 			}
 		} else {
-			log.Fatal(fmt.Sprintf("wrong arg: %s", os.Args[i]))
+			origin_from = os.Args[i]
+			const PREFIX = "mailto:"
+			if strings.HasPrefix(os.Args[i], PREFIX) {
+				origin_from = origin_from[len(PREFIX):]
+			}
 		}
 	}
 	if origin_reply_to == "" {
@@ -96,7 +101,7 @@ func main() {
 		"From: " + config.user_name + " <" + config.user_primary_email + ">" + CRLF +
 		CRLF +
 		CRLF); err != nil {
-		log.Fatal(err)
+		panic(err)
 	} else {
 		message.ClearAddress("From")
 		message.ParseAndAppendAddresses("From", config.user_name + " <" + config.user_primary_email + ">")
@@ -118,10 +123,10 @@ func main() {
 			}
 			return nil
 		}); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		if b, err := message.Export(); err != nil {
-			log.Fatal(err)
+			panic(err)
 		} else {
 			buffer = b
 		}
@@ -129,13 +134,13 @@ func main() {
 	// - exports it to a temp file
 	var tempfilename string
 	if f, err := os.CreateTemp("", "epistula-composer-"); err != nil {
-		log.Fatal(err)
+		panic(err)
 	} else {
 		if _, err := f.Write(buffer); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		if err := f.Close(); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		tempfilename = f.Name()
 	}
@@ -196,40 +201,41 @@ func main() {
 	// - encrypts the file via gpgme
 	// - sends the email
 	if b, err := message.Export(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	} else {
 		buffer = b
 	}
 	cmd := exec.Command("sendmail", "-t", )
 	if stdin, err := cmd.StdinPipe(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	} else {
 		go func() {
 			defer stdin.Close()
 			stdin.Write(buffer)
 		}()
 		if out, err := cmd.CombinedOutput(); err != nil {
-			log.Fatal(err)
+			panic(err)
 		} else {
-			log.Printf("%s\n", out)
+			log.Printf("sendmail output: %s\n", out)
 		}
 	}
 	// - saves the email in maildir and kicks off notmuch new, tag 'sent'
 	cmd = exec.Command("notmuch", "insert", "+sent", "+inbox")
 	if stdin, err := cmd.StdinPipe(); err != nil {
-		log.Fatal(err)
+		panic(err)
 	} else {
 		go func() {
 			defer stdin.Close()
 			stdin.Write(buffer)
 		}()
 		if out, err := cmd.CombinedOutput(); err != nil {
-			log.Fatal(err)
+			panic(err)
 		} else {
-			log.Printf("%s\n", out)
+			log.Printf("notmuch output: %s\n", out)
 		}
 	}
 	// TODO send USR1 to browser to notify of db change
+	ioutil.WriteFile("/tmp/temp", buffer, 0600)
 }
 
 func ParseFile(filename string) *gmime.Envelope {

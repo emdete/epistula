@@ -62,6 +62,11 @@ func updateScreen(s tcell.Screen) {
 func _log() {
 	log.SetPrefix("epistula ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds | log.LUTC | log.Lshortfile)
+	if f, err := os.OpenFile("/tmp/epistula-browser.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
+		log.Fatal(err)
+	} else {
+		os.Stderr = f
+	}
 	log.SetOutput(os.Stderr)
 }
 

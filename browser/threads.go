@@ -203,9 +203,7 @@ func (this *Threads) do_query(s tcell.Screen, query string, refresh bool) {
 			overall_t := 0 // too expensive: st.CountThreads()
 			overall_m := st.CountMessages()
 			this.notifyThreadsStatus(s, overall_t, overall_m, this.filtered_t, filtered_m)
-			if this.filtered_t > 0 {
-				this.notifyThreadsThread(s)
-			}
+			this.notifyThreadsThread(s)
 		}
 	}
 }

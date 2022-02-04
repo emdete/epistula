@@ -234,6 +234,7 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		this.selected_index_part = 0
 		this.cache = make(map[IntPair]IntPair)
 		this.dirty = true
+log.Printf("Mails.Draw after clear, if=%s", this.id)
 	case *tcell.EventKey:
 		switch ev.Key() {
 		case tcell.KeyCtrlC: // compose new email
