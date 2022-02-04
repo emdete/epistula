@@ -383,7 +383,7 @@ func (this *Mails) reply(message_filename string) {
 	subject := envelope.Subject()
 	to := envelope.Header("To")
 	var text string
-	if e := decryptMessage(message_filename, true); envelope != nil {
+	if e := decryptMessage(message_filename, true); e != nil {
 		envelope = e
 	}
 	index_message_part := 0
