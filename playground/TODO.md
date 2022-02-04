@@ -13,6 +13,7 @@ TODOs
 - show tags per thread, email
 - the composer should be able to reply on multiple emails.
 - the "replied" tag must be set somewhere on the originated mail
+- use ansimage to display thumbnails of images
 
 see also
 --
