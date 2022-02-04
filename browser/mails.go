@@ -229,7 +229,7 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 	case *EventThreadsThread:
 		this.ThreadEntry = ev.ThreadEntry
 		this.paged_y = 0
-		this.selected_index_message = 0
+		this.selected_index_message = this.count-1
 		this.textlinelimit = MAILS_TEXTLINELIMIT
 		this.selected_index_part = 0
 		this.cache = make(map[IntPair]IntPair)
@@ -245,11 +245,13 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		case tcell.KeyCtrlJ:
 			if this.selected_index_message+1 < this.count {
 				this.selected_index_message++
+				this.selected_index_part = 0
 				this.dirty = true
 			}
 		case tcell.KeyCtrlK:
 			if this.selected_index_message > 0 {
 				this.selected_index_message--
+				this.selected_index_part = 0
 				this.dirty = true
 			}
 		case tcell.KeyCtrlO:
