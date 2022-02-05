@@ -427,7 +427,7 @@ func (this *Mails) reply(message_filename string) {
 		"--hide-menubar",
 		"--working-directory=" + cwd,
 		"--",
-		"../composer/epistula-composer",
+		"epistula-composer",
 			"--bcc=",
 			"--cc=" + cc,
 			"--from=" + from,
