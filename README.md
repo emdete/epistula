@@ -43,16 +43,22 @@ The browser has a simple set of keys to be controlled. The UI has three areas: T
  - All normal characters
  - Left, right, home and end
  - Tab resets the query
+ - Enter execute query
 - Thread list
  - Up and down (next previous thread)
  - Control up and down (page up/down)
+ - Control A Archive, untag inbox
+ - Control S Tag as spam
 - List of mails in the thread
  - Page-up and page-down (page through the displayed mails)
  - Control page-up and page-down (next, previous part in the selected mail)
  - Control J and K (next, previous mail in the thread)
  - Control O (open part, show more lines)
  - Control R (reply email)
- - Control C (compose new email)
+ - Control B Bounce (not done yet)
+ - Control F Forward (not done yet)
+- Control C (compose new email)
+- Control L Refresh screen
 
 Build
 --
@@ -83,4 +89,9 @@ Instead of installing the components i just symlink the executables for now (whi
 # ln -s `pwd`/browser/epistula-browser /usr/local/bin
 # ln -s `pwd`/epistula.desktop /usr/local/share/applications
 ```
+
+Warning
+--
+
+This program is in early state and contains rough edges. Display is not always scrolling where you expect and composing mail is for nerds.
 
