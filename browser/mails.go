@@ -259,16 +259,30 @@ log.Printf("Mails.Draw after clear, if=%s", this.id)
 			this.textlinelimit += MAILS_TEXTLINELIMIT
 			this.dirty = true
 		case tcell.KeyPgUp:
-			if this.paged_y > this.dy-1 {
-				this.paged_y -= this.dy - 1
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
+				if this.selected_index_part > 0 {
+					this.selected_index_part--
+					this.dirty = true
+				}
 			} else {
-				this.paged_y = 0
-			}
-			this.dirty = true
-		case tcell.KeyPgDn:
-			if this.paged_y + this.dy < this.count_of_lines {
-				this.paged_y += this.dy - 1
+				if this.paged_y > this.dy-1 {
+					this.paged_y -= this.dy - 1
+				} else {
+					this.paged_y = 0
+				}
 				this.dirty = true
+			}
+		case tcell.KeyPgDn:
+			if ev.Modifiers()&tcell.ModCtrl != 0 {
+				if this.selected_index_part < 999 { // TODO
+					this.selected_index_part++
+					this.dirty = true
+				}
+			} else {
+				if this.paged_y + this.dy < this.count_of_lines {
+					this.paged_y += this.dy - 1
+					this.dirty = true
+				}
 			}
 		}
 	case *tcell.EventMouse:
