@@ -1,103 +1,86 @@
 Epistula
 ==
 
+This is a MUA, a mail user agent, a program to read and write your emails.
+
 The original source is maintained at [codeberg](https://codeberg.org/mdt/epistula), please do PRs & issues here.
 
 Matters can be discussed in a Matrix room #epistula:emdete.de and IRC on libera #epistula.
 
-Itching
+Whats not contained
 --
 
-> Every open source project begins with an itching
+You need a program to get the emails to your computer, various solutions are available for that task (See [Mail fetchers and synchronizers](https://notmuchmail.org/software/).
 
-this is about a huge itchy reaction on the current state of email processing, code production explosion and memory consumption inflation i had. it was an terrible itching.
+Epistula is based on [Notmuch](https://notmuchmail.org/) which organizes and finds emails.
 
-if you want to code one of the most hip IDEs is in fact based on a browser. it eats memory, contains millions of code lines, installs 330MB for an editor. same goes for a chat client. so when i looked over the alternatives for the chat client you had the choice between various GUI projects which more or less did not implement the desired features or where based on QT. only [gomuks](https://github.com/tulir/gomuks) worked for me out of the box. incredible well even. while that one was based on console out. it's not even a GUI but a CUI. still it displays images (or thumbnails of that). it's written in [go](https://go.dev/) and uses tcell.
+While Epistula is console based it needs a way to start another terminal for composing emails. For now this is hardcoded to be a graphical terminal `gnome-terminal` which needs to be installed.
 
-i wondered if there is an email MUA with a similar concept. i did not find any. so i started my own.
+The mails will be written with you favourite editor which is retreive from the environment variable `EDITOR` which defaults to `nvim` if not set.
 
-Decisions
+HTML parts are dumped to pure text using [elinks](http://elinks.cz/) which should be installed as well.
+
+A local MTA, a mail transfer agent is needed to actually send the email after composing.
+
+Whats contained
 --
 
-i need four areas: an area to show a mail thread, an area to list the mail threads, an area to enter a query term, an area to show some status information.
+Epistula consists of two parts:
 
-i code in [Go](https://pkg.go.dev/).
+- The email browser
+- The email composer
 
-i decided to have no focus control over widgets. the keys tell, which area will use them. page up/down navigates emails, cursor up/down navigates thread list, cursor left/right and chars work on the query term (more keys to come). Mouse clicks will routed by area.
+The browser shows your emails as threads and allows input of search terms. The composer just kicks of the editor with a prepared email. It has no own UI so you have to put in fields in the header (To, CC, Bcc, Subject, ..) and the mail body. After that the mail is given over to the MTA.
 
-i decided to have no fancy model view controler stuff or the like. no layout manager, just hardcoded positions. visualisation merges with function, no widget abstraction. everything is based on putting chars or strings onto the screen.
+The composer can be used to server mailto: urls from a browser.
 
-the program is consequently using PGP.
-
-i decided to use the components
-
-- [tcell](github.com/gdamore/tcell/v2) to do CUI
-- [notmuch](github.com/zenhack/go.notmuch) to query mails
-- [gpgme](github.com/proglottis/gpgme) to decode mails
-- [gmime](github.com/sendgrid/go-gmime) to parse mails
-
-So mainly the project is just a driver for those fine libraries.
-
-![Screenshot](screenshot.png)
-
-Preconditions
+Usage
 --
 
-while i was a big fan of rxvt i switched to [gnome-terminal](https://wiki.gnome.org/Apps/Terminal) recently because it has better support for all the fancy stuff tcell supports like more colors, mouse reporting, double width characters and so on. Editing mails will start another terminal which is gnome-terminal. This is hardcoded for now.
+The browser has a simple set of keys to be controlled. The UI has three areas: The query input on top, the resulting list of threads on the left, the list of mails in the selected thread on the right. Keyboard input is routed to each of the areas like
 
-i use [NeoVim](https://neovim.org/) for editing. This is hardcoded for now.
-
-i use [elinks](http://elinks.cz/) to translate anoying html mails to readable plain text. pandoc and w3m did not succeed in showing links.
-
-i use the font [Iosevka](https://github.com/be5invis/Iosevka/) which gives proper, sharp letters and contains unicode special chars. Iosevka is a narrow font, if you prefer a wider font you can try "Roboto Mono" (see Google) which gives good results too.
-
-i used
-
-```
-notmuch config set index.header.Autocrypt Autocrypt
-notmuch reindex \*
-```
-
-to be able to find emails with public keys in the meta data.
-
-i use `notmuch new --decrypt=true` and have decrypted data from my crypted email in the xapian database.
-
-i use an external script to retrieve new mail and kick off `notmuch new`. After that the browser needs an event to refresh its query result. This is done by a unix signal USR1 which is send by a `killall -USR1 epistula-browser`.
+- Query edit
+ - All normal characters
+ - Left, right, home and end
+ - Tab resets the query
+- Thread list
+ - Up and down (next previous thread)
+ - Control up and down (page up/down)
+- List of mails in the thread
+ - Page-up and page-down (page through the displayed mails)
+ - Control page-up and page-down (next, previous part in the selected mail)
+ - Control J and K (next, previous mail in the thread)
+ - Control O (open part, show more lines)
+ - Control R (reply email)
+ - Control C (compose new email)
 
 Build
 --
 
-Just compile and run the program like this:
+You need the go compiler, Debian based systems install it with:
 
 ```
-cd composer/
-go build
-cd ..
-cd browser/
-go build
-./epistula-browser --from="..." 2>/tmp/e.log
+# apt install golang-go
 ```
 
-Using
+and compile the two components with
+
+```
+$ cd browser
+$ GOOS=linux go build
+$ cd ../composer
+$ GOOS=linux go build
+$ cd ..
+```
+
+Install
 --
 
-- editing the query: Mouse-Left-Click, Mouse-Scroll, Key-Left/Right, Characters (on top)
-- navigating the result list of threads: Mouse-Left-Click, Mouse-Scroll, Key-Up/Down, Ctrl-Key-Up/Down (on the left)
-- navigating the list of mails: Key-Page-Up/Down, Ctrl-Key-PageUp/Down (on the right)
-- globally
-	- Ctrl-Key-A: Archive, untag inbox
-	- Ctrl-Key-B: Bounce (not done yet)
-	- Ctrl-Key-C: Compose an email
-	- Ctrl-Key-F: Forward (not done yet)
-	- Ctrl-Key-L: Refresh screen
-	- Ctrl-Key-O: Open further lines on a text part
-	- Ctrl-Key-R: Reply an email
-	- Ctrl-Key-S: Tag as spam
+Instead of installing the components i just symlink the executables for now (which introduces some security risk):
 
-Warning
---
-
-This is POC code! It looks like spaghetti but that is intended as i am learning how i want my MUA to behave.
-
-The program uses panic() on errors which immedialty terminate the program. This happens (more or less expected) if you navigate to quickly through your emails. This is because each screen update parses the entire mail thread each time and the program uses tcell event queue which will run full.
+```
+# ln -s `pwd`/composer/epistula-composer /usr/local/bin
+# ln -s `pwd`/browser/epistula-browser /usr/local/bin
+# ln -s `pwd`/epistula.desktop /usr/local/share/applications
+```
 
