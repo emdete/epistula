@@ -166,7 +166,7 @@ func main() {
 		status := message.Header("X-Epistula-Status")
 		done = !strings.Contains(status, "not")
 		abort = strings.Contains(status, "abort")
-		if done {
+		if done && !abort {
 			// check To: field
 			if to := message.Header("To"); to == "" {
 				log.Printf("To: is empty")
