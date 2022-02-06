@@ -39,17 +39,17 @@ Usage
 
 The browser has a simple set of keys to be controlled. The UI has three areas: The query input on top, the resulting list of threads on the left, the list of mails in the selected thread on the right. Keyboard input is routed to each of the areas like
 
-- Query edit
+- Query edit:
  - All normal characters
  - Left, right, home and end
  - Tab resets the query
  - Enter execute query
-- Thread list
+- Thread list:
  - Up and down (next previous thread)
  - Control up and down (page up/down)
  - Control A Archive, untag inbox
  - Control S Tag as spam
-- List of mails in the thread
+- List of mails in the thread:
  - Page-up and page-down (page through the displayed mails)
  - Control page-up and page-down (next, previous part in the selected mail)
  - Control J and K (next, previous mail in the thread)
@@ -57,8 +57,13 @@ The browser has a simple set of keys to be controlled. The UI has three areas: T
  - Control R (reply email)
  - Control B Bounce (not done yet)
  - Control F Forward (not done yet)
-- Control C (compose new email)
-- Control L Refresh screen
+- Global:
+ - Control C (compose new email)
+ - Control L Refresh screen
+ - Mouse wheel for scrolling and left button for selecting are bound
+ - Esc terminate Epistula
+
+The mail list shows all parts of an email. The first text part is "opened" and the first 12 lines are shown. If there are more lines that is indicated by "+". Other parts can be opened (is supported) by clicking the triangle or by navigating to that part with Control-J/K.
 
 Build
 --
@@ -93,5 +98,7 @@ Instead of installing the components i just symlink the executables for now (whi
 Warning
 --
 
-This program is in early state and contains rough edges. Display is not always scrolling where you expect and composing mail is for nerds.
+This program is in early state and contains rough edges. Display is not always scrolling where you expect and composing mail is for nerds. Navigating and scrolling is not finished yet.
+
+The program uses panic() on errors which immedialty terminate the program. The programs log into /tmp/epistula-browser.log and /tmp/epistula-composer.log and the panic will give an stacktrace.
 
