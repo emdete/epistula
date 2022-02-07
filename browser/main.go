@@ -78,6 +78,10 @@ func main() {
 	// log
 	_log()
 	log.Printf("main")
+	// search the required executables
+	if err := CheckEnv(); err != nil {
+		panic(err)
+	}
 	//
 	for i:=1;i<len(os.Args);i++ {
 		if strings.HasPrefix(os.Args[i], "--") {

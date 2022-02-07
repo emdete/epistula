@@ -201,4 +201,29 @@ func ThreadRemoveTag(id, tag string) error {
 	return nil
 }
 
+func CheckEnv() error {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "nvim"
+		log.Printf("EDITOR environment missing, defaulting to %s", editor)
+	}
+	if editor, err := exec.LookPath(editor); err == nil {
+		log.Printf("EDITOR missing, err=%s", editor)
+		return err
+	}
+	if terminal, err := exec.LookPath("gnome-terminal"); err == nil {
+		log.Printf("TERMINAL missing, err=%s", terminal)
+		return err
+	}
+	if composer, err := exec.LookPath("epistula-composer"); err == nil {
+		log.Printf("COMPOSER missing, err=%s", composer)
+		return err
+	}
+	if elinks, err := exec.LookPath("elinks"); err == nil {
+		log.Printf("ELINKS missing, err=%s", elinks)
+		return err
+	}
+	return nil
+}
+
 
