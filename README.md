@@ -16,11 +16,11 @@ Epistula is based on [Notmuch](https://notmuchmail.org/) which organizes and fin
 
 While Epistula is console based it needs a way to start another terminal for composing emails. For now this is hardcoded to be a graphical terminal `gnome-terminal` which needs to be installed.
 
-The mails will be written with you favourite editor which is retreive from the environment variable `EDITOR` which defaults to `nvim` if not set.
+The mails will be written with you favourite editor which is retreive from the environment variable `EDITOR` which defaults to [nvim](http://neovim.org/) if not set.
 
 HTML parts are dumped to pure text using [elinks](http://elinks.cz/) which should be installed as well.
 
-A local MTA, a mail transfer agent is needed to actually send the email after composing.
+A local MTA, a mail transfer agent is needed to actually send the email after composing (i suggest using [opensmtpd](https://www.opensmtpd.org/).
 
 Whats contained
 --
