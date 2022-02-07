@@ -30,7 +30,7 @@ Epistula consists of two parts:
 - The email browser
 - The email composer
 
-The browser shows your emails as threads and allows input of search terms. The composer just kicks of the editor with a prepared email. It has no own UI so you have to put in fields in the header (To, CC, Bcc, Subject, ..) and the mail body. After that the mail is given over to the MTA.
+The browser shows your emails as threads and allows input of [search terms](https://notmuchmail.org/manpages/notmuch-search-terms-7/). The composer just kicks of the editor with a prepared email. It has no own UI so you have to put in fields in the header (To, CC, Bcc, Subject, ..) and the mail body. After that the mail is given over to the MTA.
 
 The composer can be used to server mailto: urls from a browser.
 
