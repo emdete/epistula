@@ -63,7 +63,7 @@ The browser has a simple set of keys to be controlled. The UI has three areas: T
 	- Mouse wheel for scrolling and left button for selecting are bound
 	- Esc terminate Epistula
 
-The mail list shows all parts of an email. The first text part is "opened" and the first 12 lines are shown. If there are more lines that is indicated by "+". Other parts can be opened (is supported) by clicking the triangle or by navigating to that part with Control-J/K.
+The mail list shows all parts of an email. The first text part is "opened" and the first 12 lines are shown. If there are more lines that is indicated by "+". Other parts can be opened (if supported) by clicking the triangle or by navigating to that part with Control-J/K.
 
 Build
 --
