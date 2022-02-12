@@ -158,6 +158,7 @@ func main() {
 						tcell.KeyCtrlJ, // next mail in thread
 						tcell.KeyCtrlK, // previous mail in thread
 						tcell.KeyCtrlR, // reply to selected email
+						tcell.KeyCtrlD, // save selected part of selected email
 						tcell.KeyCtrlC: // compose new email
 					mails.EventHandler(s, ev)
 				case tcell.KeyEscape: // terminate epistula

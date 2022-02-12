@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"os"
 	"strings"
+	"path/filepath"
+	"io/ioutil"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
 	// see ~/go/pkg/mod/github.com/sendgrid/go-gmime@v0.0.0-20211124164648-4c44cbd981d8/
@@ -107,8 +109,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 			this.cache[IntPair{px+w-1,py}] = IntPair{index_message,index_message_part}
 			if selected { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 			py++
-			if index_message_part == this.selected_index_part {
-				//if part.ContentType() == "message/rfc822" { if envlp, err := gmime.Parse(part.Text()); err != nil {}}
+			if this.selected_index_part < 0 || index_message_part == this.selected_index_part {
 				if part.IsText() {
 					this.SetContent(s, px+w-1, py-1, MAILS_OPEN, nil, style_normal_dim)
 					textline := 0
@@ -123,7 +124,9 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 						text, _ = ICalToPlaintext(part.Text())
 					} else {
 						log.Printf("unknown text type %s", part.ContentType())
+						return nil
 					}
+					this.selected_index_part = index_message_part
 					for _, paragraph := range strings.Split(text, "\n") {
 						oy := py
 						paragraph = strings.TrimSpace(paragraph)
@@ -143,14 +146,6 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 							break
 						}
 					}
-				//} else if part.IsAttachment() {
-				//
-				} else {
-					// if we cannot display this part, increase
-					// selected_index_part, we are at index_message_part ==
-					// this.selected_index_part already so if we cant be
-					// displayd lets try the next one
-					this.selected_index_part++
 				}
 			}
 			index_message_part++
@@ -231,7 +226,7 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		this.paged_y = 0
 		this.selected_index_message = this.count-1
 		this.textlinelimit = MAILS_TEXTLINELIMIT
-		this.selected_index_part = 0
+		this.selected_index_part = -1
 		this.cache = make(map[IntPair]IntPair)
 		this.dirty = true
 		//log.Printf("Mails.Draw after clear, if=%s", this.id)
@@ -239,6 +234,12 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		switch ev.Key() {
 		case tcell.KeyCtrlC: // compose new email
 			this.compose()
+		case tcell.KeyCtrlD: // download selected part (attachment)
+			log.Printf("KeyCtrlD")
+			if mailfilename := mails.GetSelectedMailFilename(); mailfilename != "" {
+				log.Printf("selected email is %s", mailfilename)
+				mails.download(mailfilename)
+			}
 		case tcell.KeyCtrlR: // reply to selected email
 			if mailfilename := mails.GetSelectedMailFilename(); mailfilename != "" {
 				mails.reply(mailfilename)
@@ -384,6 +385,38 @@ func (this *Mails) compose() {
 		"../composer/epistula-composer",
 		)
 	go cmd.Run()
+}
+
+func (this *Mails) download(message_filename string) {
+	log.Printf("download %d", this.selected_index_part)
+	envelope := parseMessage(message_filename)
+	if e := decryptMessage(message_filename, true); e != nil {
+		envelope.Close()
+		envelope = e
+	}
+	defer envelope.Close()
+	var buffer []byte;
+	var filename string
+	index_message_part := 0
+	if err := envelope.Walk(func (part *gmime.Part) error {
+		if index_message_part == this.selected_index_part {
+			buffer = part.Bytes()
+			filename = part.Filename()
+			log.Printf("found %s", filename)
+		}
+		index_message_part++
+		return nil
+	}); err != nil {
+		panic(nil)
+	}
+	if filename == "" {
+		filename = "/tmp/epistula.bin"
+	} else {
+		filename = filepath.Join("/tmp", filename)
+	}
+	if err := ioutil.WriteFile(filename, buffer, 0644); err != nil {
+		log.Printf("error %v during saving attachment %s", err, filename)
+	}
 }
 
 func (this *Mails) reply(message_filename string) {
