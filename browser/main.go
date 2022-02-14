@@ -266,7 +266,7 @@ func (this *Area) SetParagraph(s tcell.Screen, x, y int, style tcell.Style, para
 	px := 0
 	for _, word := range strings.Split(paragraph, " ") {
 		if len(word) > 0 { // remove double space
-			if px + len(word) > width {
+			if px + len(word) + 2 > width {
 				this.SetString(s, x+px, y, style, "", width-px) // wipe rest of line
 				y++
 				px = 0

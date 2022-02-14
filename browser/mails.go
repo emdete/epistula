@@ -106,12 +106,12 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 			this.SetContent(s, px, py, tcell.RuneVLine, nil, style_frame)
 			this.SetString(s, px+1, py, style_normal_dim, part.ContentType() + " " + part.Filename(), w)
 			this.SetContent(s, px+w-1, py, MAILS_CLOSE, nil, style_normal_dim)
+			opy := py
 			this.cache[IntPair{px+w-1,py}] = IntPair{index_message,index_message_part}
 			if selected { this.SetContent(s, px+w, py, ' ', nil, selected_style) }
 			py++
 			if this.selected_index_part < 0 || index_message_part == this.selected_index_part {
 				if part.IsText() {
-					this.SetContent(s, px+w-1, py-1, MAILS_OPEN, nil, style_normal_dim)
 					textline := 0
 					paragraphprefix := ""
 					lastparagraphempty := true
@@ -126,6 +126,7 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 						log.Printf("unknown text type %s", part.ContentType())
 						return nil
 					}
+					// if selected_index_part was negative, save the position of the text part
 					this.selected_index_part = index_message_part
 					for _, paragraph := range strings.Split(text, "\n") {
 						oy := py
@@ -147,6 +148,9 @@ func (this *Mails) drawMessage(s tcell.Screen, px, py int, envelope, decrypted *
 						}
 					}
 				}
+			}
+			if index_message_part == this.selected_index_part {
+				this.SetContent(s, px+w-1, opy, MAILS_OPEN, nil, style_normal_dim)
 			}
 			index_message_part++
 			return nil
@@ -410,10 +414,11 @@ func (this *Mails) download(message_filename string) {
 		panic(nil)
 	}
 	if filename == "" {
-		filename = "/tmp/epistula.bin"
+		filename = "epistula.bin"
 	} else {
-		filename = filepath.Join("/tmp", filename)
+		filename = strings.ToLower(filename)
 	}
+	filename = filepath.Join(os.Getenv("HOME"), "Downloads", filename)
 	if err := ioutil.WriteFile(filename, buffer, 0644); err != nil {
 		log.Printf("error %v during saving attachment %s", err, filename)
 	}
