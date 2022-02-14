@@ -1,0 +1,12 @@
+# .woodpecker.yml
+pipeline:
+  build:
+    image: golang
+    commands:
+      - echo "Building.."
+      - cd browser && go build
+      - cd composer && go build
+  a-test-step:
+    image: debian
+    commands:
+      - echo "Testing.."
