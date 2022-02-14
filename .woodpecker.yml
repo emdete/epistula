@@ -4,6 +4,7 @@ pipeline:
     image: golang
     commands:
       - echo "Building.."
+      - apt-get update
       - apt install -y libnotmuch-dev libgmime-3.0-dev libgpgme-dev
       - cd browser && go build
       - cd composer && go build
