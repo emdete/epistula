@@ -71,7 +71,7 @@ Build
 You need the go compiler, Debian based systems install it with:
 
 ```
-# apt install golang-go
+# apt install golang-go libnotmuch-dev libgmime-3.0-dev libgpgme-dev
 ```
 
 and compile the two components with
