@@ -12,6 +12,8 @@ pipeline:
     image: golang
     commands:
       - echo "Testing.."
+      - apt-get update
+      - apt install -y libc-bin file
       - file browser/epistula-browser
       - ldd browser/epistula-browser
       - file composer/epistula-composer
