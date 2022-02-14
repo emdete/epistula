@@ -10,9 +10,9 @@ Matters can be discussed in a Matrix room #epistula:emdete.de and IRC on libera 
 Whats not contained
 --
 
-You need a program to get the emails to your computer, various solutions are available for that task (See [Mail fetchers and synchronizers](https://notmuchmail.org/software/).
+Epistula is based on [Notmuch](https://notmuchmail.org/) which indexes and finds emails. It needs to be installed and configured to index your emails. The idea is that all your emails stay on your local machine. No imap or cloud behind.
 
-Epistula is based on [Notmuch](https://notmuchmail.org/) which organizes and finds emails.
+You need a program to get the emails to your computer, various solutions are available for that task (See [Mail fetchers and synchronizers](https://notmuchmail.org/software/)).
 
 While Epistula is console based it needs a way to start another terminal for composing emails. For now this is hardcoded to be a graphical terminal `gnome-terminal` which needs to be installed.
 
@@ -25,14 +25,14 @@ A local MTA, a mail transfer agent is needed to actually send the email after co
 Whats contained
 --
 
-Epistula consists of two parts:
+Epistula consists of two programs doing a single job each:
 
 - The email browser
 - The email composer
 
-The browser shows your emails as threads and allows input of [search terms](https://notmuchmail.org/manpages/notmuch-search-terms-7/). The composer just kicks of the editor with a prepared email. It has no own UI so you have to put in fields in the header (To, CC, Bcc, Subject, ..) and the mail body. After that the mail is given over to the MTA.
+The browser shows your emails as threads and allows input of [search terms](https://notmuchmail.org/manpages/notmuch-search-terms-7/). The composer just kicks of the editor with a prepared email. It has no own UI yet so you have to put in fields in the header (To, CC, Bcc, Subject, ..) and the mail body. After that the mail is given over to the MTA.
 
-The composer can be used to server mailto: urls from a browser.
+The composer can be used to serve mailto: urls from a browser, a .desktop file is included.
 
 Usage
 --

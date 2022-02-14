@@ -12,3 +12,8 @@ pipeline:
     image: golang
     commands:
       - echo "Testing.."
+      - file browser/epistula-browser
+      - ldd browser/epistula-browser
+      - file composer/epistula-composer
+      - ldd composer/epistula-composer
+
