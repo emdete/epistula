@@ -386,7 +386,7 @@ func (this *Mails) compose() {
 		"--hide-menubar",
 		"--working-directory=" + cwd,
 		"--",
-		"../composer/epistula-composer",
+		"epistula-composer",
 		)
 	go cmd.Run()
 }

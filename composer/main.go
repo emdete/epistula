@@ -96,6 +96,7 @@ func main() {
 	// go-gmime doesnt support creation of envelopes or parts in envelopes yet.
 	// so we create an empty dummy email and modify the elements after parsing
 	// that
+	log.Printf("here")
 	if message, err := gmime.Parse(
 		"Date: " + date_string + CRLF +
 		"From: " + config.user_name + " <" + config.user_primary_email + ">" + CRLF +
