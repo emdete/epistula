@@ -157,7 +157,14 @@ func main() {
 		if EDITOR, err := exec.LookPath(EDITOR); err == nil {
 			var procAttr os.ProcAttr
 			procAttr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}
-			if proc, err := os.StartProcess(EDITOR, []string{EDITOR, "+", tempfilename}, &procAttr); err == nil {
+			if proc, err := os.StartProcess(EDITOR, []string{EDITOR,
+					"+set ft=mail", // switch to meail syntax
+					"+set fileencoding=utf-8", // use utf8
+					"+set enc=utf-8", // use utf8
+					"+set fo+=w", // do wsf
+					"+set fo-=ro", // dont repeat ">.." on new lines
+					// "+set ff=unix",
+					tempfilename}, &procAttr); err == nil {
 				proc.Wait()
 			}
 		}
