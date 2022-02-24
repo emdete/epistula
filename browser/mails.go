@@ -226,14 +226,16 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 	// log.Printf("Mails.EventHandler %#v", event)
 	switch ev := event.(type) {
 	case *EventThreadsThread:
-		this.ThreadEntry = ev.ThreadEntry
-		this.paged_y = 0
-		this.selected_index_message = this.count-1
-		this.textlinelimit = MAILS_TEXTLINELIMIT
-		this.selected_index_part = -1
-		this.cache = make(map[IntPair]IntPair)
-		this.dirty = true
-		//log.Printf("Mails.Draw after clear, if=%s", this.id)
+		if this.id != ev.id {
+			this.ThreadEntry = ev.ThreadEntry
+			this.paged_y = 0
+			this.selected_index_message = this.count-1
+			this.textlinelimit = MAILS_TEXTLINELIMIT
+			this.selected_index_part = -1
+			this.cache = make(map[IntPair]IntPair)
+			this.dirty = true
+			//log.Printf("Mails.Draw after clear, if=%s", this.id)
+		}
 	case *tcell.EventKey:
 		switch ev.Key() {
 		case tcell.KeyCtrlC: // compose new email
