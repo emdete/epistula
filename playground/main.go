@@ -16,7 +16,7 @@ import (
 	// "syscall"
 	// "time"
 	// "path"
-	// "github.com/sendgrid/go-gmime/gmime"
+	// "github.com/emdete/go-gmime/gmime"
 	// "github.com/zenhack/go.notmuch"
 	// "github.com/proglottis/gpgme"
 	)
