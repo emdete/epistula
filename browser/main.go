@@ -157,6 +157,8 @@ func main() {
 						tcell.KeyCtrlO, // open more lines of the selected mail
 						tcell.KeyCtrlJ, // next mail in thread
 						tcell.KeyCtrlK, // previous mail in thread
+						tcell.KeyCtrlP, // previous part in mail
+						tcell.KeyCtrlN, // next part in mail
 						tcell.KeyCtrlR, // reply to selected email
 						tcell.KeyCtrlD, // save selected part of selected email
 						tcell.KeyCtrlC: // compose new email

@@ -241,7 +241,6 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		case tcell.KeyCtrlC: // compose new email
 			this.compose()
 		case tcell.KeyCtrlD: // download selected part (attachment)
-			log.Printf("KeyCtrlD")
 			if mailfilename := mails.GetSelectedMailFilename(); mailfilename != "" {
 				log.Printf("selected email is %s", mailfilename)
 				mails.download(mailfilename)
@@ -249,6 +248,18 @@ func (this *Mails) EventHandler(s tcell.Screen, event tcell.Event) {
 		case tcell.KeyCtrlR: // reply to selected email
 			if mailfilename := mails.GetSelectedMailFilename(); mailfilename != "" {
 				mails.reply(mailfilename)
+			}
+		case tcell.KeyCtrlP: //
+			log.Printf("KeyCtrlP %d %d", this.selected_index_part, this.count)
+			if this.selected_index_part > 0 {
+				this.selected_index_part--
+				this.dirty = true
+			}
+		case tcell.KeyCtrlN: //
+			log.Printf("KeyCtrlN %d %d", this.selected_index_part, this.count)
+			if this.selected_index_part+1 < 99 { // TODO count parts somewhere
+				this.selected_index_part++
+				this.dirty = true
 			}
 		case tcell.KeyCtrlJ:
 			if this.selected_index_message+1 < this.count {
