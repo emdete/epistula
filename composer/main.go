@@ -116,6 +116,7 @@ func main() {
 		message.SetHeader("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'. Add a 'abort' to abort sending (editings lost).")
 		message.SetHeader("X-Epistula-Attachment", "#sample entry#")
 		if content_text != "" {
+			// TODO add from & date
 			content_text = "> " + strings.ReplaceAll(content_text, "\n", "\n> ")
 		}
 		if err := message.Walk(func (part *gmime.Part) error {
@@ -168,6 +169,8 @@ func main() {
 					tempfilename}, &procAttr); err == nil {
 				proc.Wait()
 			}
+		} else {
+			panic(err)
 		}
 	// - parses the file via gmime
 		message = ParseFile(tempfilename)
@@ -188,10 +191,21 @@ func main() {
 		// the user flagged the message to be aborted
 		os.Exit(0)
 	}
-	message.RemoveHeader("Fcc")
+	message.RemoveHeader("Fcc") // we do not support fcc
 	message.RemoveHeader("X-Epistula-Status")
 	message.RemoveHeader("X-Epistula-Comment")
-	message.RemoveHeader("X-Epistula-Attachment") // TODO add attachment
+	attachments := strings.Split(message.Header("X-Epistula-Attachment"), " ")
+	for i:=0;i<len(attachments);i++ {
+		if attachments[i][0] != '#' {
+			if _, err := ioutil.ReadFile(attachments[i]); err != nil {
+				log.Printf("error %s with %s", err, attachments[i])
+			} else {
+				// TODO add attachment
+				//message.Attach(content, attachments[i])
+			}
+		}
+	}
+	message.RemoveHeader("X-Epistula-Attachment")
 	message.ParseAndAppendAddresses("Reply-To", config.user_primary_email)
 	message.SetHeader("MIME-Version", "1.0")
 	message.SetHeader("User-Agent", "Epistula")
