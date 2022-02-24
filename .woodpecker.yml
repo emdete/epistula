@@ -1,4 +1,4 @@
-# .woodpecker.yml
+# .woodpecker.yml https://hub.docker.com/search?type=image
 pipeline:
   build:
     image: golang
