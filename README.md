@@ -7,6 +7,8 @@ The original source is maintained at [codeberg](https://codeberg.org/mdt/epistul
 
 Matters can be discussed in a Matrix room #epistula:emdete.de and IRC on libera #epistula.
 
+Currently the project is a bit stuck cause go-gmime doesnt support the functions needed to add attachments and go-gpgme cant encrypt an entire email.
+
 Whats not contained
 --
 
