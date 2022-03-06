@@ -10,29 +10,31 @@ import os
 
 #include "gmime/gmime.h"
 
-struct C._GError {
+[heap] struct C._GError {
 mut:
 	domain int
 	code int
 	message &char
 }
-struct C.GObject { }
-struct C._GMimeTextPart { }
-struct C._GDateTime { }
-struct C.GMimeCryptoContext { }
-struct C._GMimeObject { }
-struct C._GMimeDataWrapper { }
-struct C._GMimeMessage { }
-struct C._GMimeStream { }
+[heap] struct C.GObject { }
+[heap] struct C._GMimeTextPart { }
+[heap] struct C._GMimeParser { }
+[heap] struct C._GDateTime { }
+[heap] struct C._GMimeParserOptions { }
+[heap] struct C.GMimeCryptoContext { }
+[heap] struct C._GMimeObject { }
+[heap] struct C._GMimeDataWrapper { }
+[heap] struct C._GMimeMessage { }
+[heap] struct C._GMimeStream { }
 [heap] struct C._GMimeMultipart { }
-struct C._GMimePart { }
-struct C._GPtrArray { }
-struct C._GByteArray {
+[heap] struct C._GMimePart { }
+[heap] struct C._GPtrArray { }
+[heap] struct C._GByteArray {
 mut:
 	data &char
 	len int
 }
-struct C._GMimeFormatOptions { }
+[heap] struct C._GMimeFormatOptions { }
 fn C.GMIME_OBJECT(voidptr) &C._GMimeObject
 fn C.GMIME_STREAM_MEM(voidptr) &C._GMimeStreamMem
 fn C.GMIME_STREAM(voidptr) &C._GMimeStream
@@ -76,9 +78,23 @@ fn C.g_mime_gpg_context_new() &C.GMimeCryptoContext
 fn C.g_mime_multipart_encrypted_encrypt(&C.GMimeCryptoContext, &C.GObject, int, voidptr, int, &C._GPtrArray, &&C._GError) &C.GMimeMultipartEncrypted
 fn C.g_error_free(&C._GError)
 fn C.GMIME_IS_STREAM(voidptr) int
+fn C.gmime_parse() 
+fn C.g_mime_parser_new_with_stream (&C._GMimeStream) &C._GMimeParser
+fn C.g_mime_parser_construct_message (&C._GMimeParser, &C._GMimeParserOptions) &C._GMimeMessage
+fn C.g_mime_parser_options_get_default () &C._GMimeParserOptions
 
 fn cstr(s string) &char {
 	return &char(s.str)
+}
+
+fn x(filename string) &C._GMimeMessage {
+	err := &C._GError(0)
+	stream := C.g_mime_stream_fs_open (cstr(filename), /*O_RDONLY*/0, 0644, &err)
+	parser := C.g_mime_parser_new_with_stream (stream)
+	C.g_object_unref (C.G_OBJECT(stream))
+	message := C.g_mime_parser_construct_message (parser, /*NULL*/voidptr(0))
+	C.g_object_unref (C.G_OBJECT(parser))
+	return message
 }
 
 fn main() {
