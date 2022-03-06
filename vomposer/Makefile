@@ -5,8 +5,7 @@ VFLAGS=-show-c-output -showcc -g -keepc -cg
 VFLAGS=-keepc -cg
 
 all: cmime
-	LANG=C ./cmime
-	./cmime > /tmp/cmime
+	./$< > /tmp/cmime
 
 run: vmime
 	./$< > /tmp/vmime
