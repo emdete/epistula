@@ -19,7 +19,7 @@ pipeline:
     commands:
       - echo "Testing.."
       - apt-get update
-      - apt install -y libc-bin file libnotmuch libgmime-3.0 libgpgme
+      - apt install -y libc-bin file libnotmuch5 libgmime-3.0-0 libgpgme11
       - file browser/epistula-browser
       - ldd browser/epistula-browser
       - file composer/epistula-composer
