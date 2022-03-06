@@ -1,6 +1,7 @@
 // see https://github.com/vlang/v/blob/master/doc/docs.md
 // see https://modules.vlang.io/
 import os
+import io.util
 
 #flag -lgmime-3.0 -lgio-2.0 -lgobject-2.0 -lglib-2.0 // LDFLAGS=`pkg-config --libs gmime-3.0`
 #flag -D_LARGEFILE64_SOURCE -pthread -I/usr/include/gmime-3.0 -I/usr/include/libmount -I/usr/include/blkid -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include // CFLAGS=`pkg-config --cflags gmime-3.0`
@@ -51,6 +52,7 @@ fn C.g_mime_stream_mem_new() &C._GMimeStream
 fn C.g_object_unref(&C.GObject)
 fn C.g_mime_message_add_mailbox(&C._GMimeMessage, C.GMimeAddressType, &char, &char)
 fn C.g_mime_object_set_header(&C._GMimeObject, &char, &char, &char)
+fn C.g_mime_object_get_header(&C._GMimeObject, &char) &char
 fn C.g_mime_message_set_subject(&C._GMimeMessage, &char, &char)
 fn C.g_mime_message_set_message_id(&C._GMimeMessage, &char)
 fn C.g_mime_utils_generate_message_id(&char) &char
@@ -87,16 +89,6 @@ fn cstr(s string) &char {
 	return &char(s.str)
 }
 
-fn x(filename string) &C._GMimeMessage {
-	err := &C._GError(0)
-	stream := C.g_mime_stream_fs_open (cstr(filename), /*O_RDONLY*/0, 0644, &err)
-	parser := C.g_mime_parser_new_with_stream (stream)
-	C.g_object_unref (C.G_OBJECT(stream))
-	message := C.g_mime_parser_construct_message (parser, /*NULL*/voidptr(0))
-	C.g_object_unref (C.G_OBJECT(parser))
-	return message
-}
-
 fn main() {
 	myself := cstr("mdt@emdete.de")
 	myname := cstr("M. Dietrich")
@@ -113,7 +105,8 @@ fn main() {
 	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_CC), myname, myself)
 	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_BCC), myname, myself)
 	C.g_mime_object_set_header(C.GMIME_OBJECT(message), cstr("User-Agent"), cstr("Epistula"), charset)
-	date := C.g_date_time_new_from_unix_utc(C.time(/*C.NULL*/0))
+	C.g_mime_object_set_header(C.GMIME_OBJECT(message), cstr("X-Epistula-Status"), cstr("I am not done"), charset)
+	date := C.g_date_time_new_from_unix_utc(int(C.time(/*C.NULL*/0)))
 	C.g_mime_message_set_date(message, date)
 	C.g_date_time_unref(date)
 	C.g_mime_message_set_message_id(message, C.g_mime_utils_generate_message_id(cstr("epistula.de")))
@@ -144,7 +137,7 @@ Will you be my +1?
 	{
 		recipients := C.g_ptr_array_new()
 		C.g_ptr_array_add(recipients, myself)
-		//C.g_ptr_array_add(recipients, cstr("test@sample.org"))
+		C.g_ptr_array_add(recipients, cstr("test@sample.org"))
 		ctx := C.g_mime_gpg_context_new()
 		err := &C._GError(0)
 		encrypted := C.g_mime_multipart_encrypted_encrypt(ctx, C.G_OBJECT(multipart), /*FALSE*/0, voidptr(0), 0, recipients, &err)
@@ -168,10 +161,22 @@ Will you be my +1?
 	format := C.g_mime_format_options_get_default()
 	C.g_mime_format_options_set_newline_format(format, C.GMimeNewLineFormat(C.GMIME_NEWLINE_FORMAT_DOS))
 	C.g_mime_object_write_to_stream(C.GMIME_OBJECT(message), format, stream)
-	mut buffer := C.g_mime_stream_mem_get_byte_array(C.GMIME_STREAM_MEM(stream))
-	s := unsafe { (buffer.data).vstring_with_len(buffer.len-1) }
-	println("$s")
+	buffer := C.g_mime_stream_mem_get_byte_array(C.GMIME_STREAM_MEM(stream))
+	s := unsafe { (buffer.data).vstring_with_len(buffer.len) }
 	C.g_object_unref(C.G_OBJECT(stream))
+	mut file, tempfile := util.temp_file(util.TempFileOptions{pattern: "epistula.vomposer."}) or {
+		eprintln("temp_file failed")
+		exit(-1) }
+	eprintln("$tempfile")
+	file.write_string(s) or {
+		eprintln("write_string failed")
+		exit(-1) }
+	file.close()
+	mail_edit(tempfile)
+	mmsg := mail_parse(tempfile)
+	status := unsafe { C.g_mime_object_get_header(C.GMIME_OBJECT(mmsg), cstr("X-Epistula-Status")).vstring() }
+	eprintln("$status")
+	eprintln("mail_parse $mmsg")
 	// fini
 	C.g_object_unref(C.G_OBJECT(message))
 	C.g_mime_charset_map_shutdown()
@@ -213,3 +218,19 @@ fn mail_edit(filename string) {
 	p.wait()
 	p.close()
 }
+
+fn mail_parse(filename string) &C._GMimeMessage {
+	err := &C._GError(0)
+	stream := C.g_mime_stream_fs_open (cstr(filename), /*O_RDONLY*/0, 0644, &err)
+	if stream == voidptr(0) {
+		m := unsafe { err.message.vstring() }
+		eprintln("encryption failed: '$m'")
+		return voidptr(0)
+	}
+	parser := C.g_mime_parser_new_with_stream (stream)
+	C.g_object_unref (C.G_OBJECT(stream))
+	message := C.g_mime_parser_construct_message (parser, /*NULL*/voidptr(0))
+	C.g_object_unref (C.G_OBJECT(parser))
+	return message
+}
+
