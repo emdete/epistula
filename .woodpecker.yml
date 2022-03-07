@@ -13,7 +13,7 @@ pipeline:
       - curl -O -L https://github.com/vlang/v/releases/latest/download/v_linux.zip
       - unzip v_linux.zip
       - v/v symlink
-      - (cd vomposer && make vmime)
+      - (cd vomposer && make epistula-vomposer)
   a-test-step:
     image: golang
     commands:
