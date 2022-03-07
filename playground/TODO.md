@@ -16,6 +16,8 @@ TODOs
 - the "replied" tag must be set somewhere on the originated mail
 - use ansimage to display thumbnails of images
 - add [tmux](https://tmux.github.io/) integration example
+- add upload ical
+- visualize tags
 
 see also
 --
