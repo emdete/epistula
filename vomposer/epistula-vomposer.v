@@ -8,7 +8,6 @@ fn main() {
 	mut session := vmime.session_open()
 	defer { session.close() }
 	mut email := session.email_new()
-	if false {
 	for arg in os.args[1..] {
 		if arg.starts_with("--") {
 			x := arg[2..].split_nth('=', 2)
@@ -29,7 +28,6 @@ fn main() {
 		} else {
 			// to
 		}
-	}
 	}
 	vmime.samplerun()
 }

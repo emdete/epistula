@@ -14,33 +14,35 @@ mut:
 	code int
 	message &char
 }
-[heap] struct C.GObject { }
-[heap] struct C._GMimeTextPart { }
-[heap] struct C._GMimePartIter { }
-[heap] struct C._GMimeContentType { }
-[heap] struct C._GMimeParser { }
-[heap] struct C._GDateTime { }
-[heap] struct C._GMimeParserOptions { }
-[heap] struct C._GMimeCryptoContext { }
-[heap] struct C._GMimeObject { }
-[heap] struct C._GMimeDataWrapper { }
-[heap] struct C._GMimeMessage { }
-[heap] struct C._InternetAddress { }
-[heap] struct C._GMimeStream { }
-[heap] struct C._GMimeMultipart { }
-[heap] struct C._GMimePart { }
-[heap] struct C._GPtrArray { }
-[heap] struct C._InternetAddressList { }
 [heap] struct C._GByteArray {
 mut:
 	data &char
 	len int
 }
+[heap] struct C.GObject { }
+[heap] struct C._GDateTime { }
+[heap] struct C._GMimeContentType { }
+[heap] struct C._GMimeCryptoContext { }
+[heap] struct C._GMimeDataWrapper { }
 [heap] struct C._GMimeFormatOptions { }
+[heap] struct C._GMimeMessage { }
+[heap] struct C._GMimeMultipart { }
+[heap] struct C._GMimeObject { }
+[heap] struct C._GMimeParser { }
+[heap] struct C._GMimeParserOptions { }
+[heap] struct C._GMimePart { }
+[heap] struct C._GMimePartIter { }
+[heap] struct C._GMimeStream { }
+[heap] struct C._GMimeTextPart { }
+[heap] struct C._GPtrArray { }
+[heap] struct C._InternetAddress { }
+[heap] struct C._InternetAddressList { }
+[heap] struct C._InternetAddressMailbox { }
 fn C.GMIME_OBJECT(voidptr) &C._GMimeObject
 fn C.GMIME_STREAM_MEM(voidptr) &C._GMimeStreamMem
 fn C.GMIME_STREAM(voidptr) &C._GMimeStream
 fn C.G_OBJECT(voidptr) &C.GObject
+fn C.INTERNET_ADDRESS_MAILBOX(voidptr) &C._InternetAddressMailbox
 fn C.g_mime_charset_map_shutdown()
 fn C.g_mime_format_options_get_default() &C._GMimeFormatOptions
 fn C.g_mime_format_options_set_newline_format(&C._GMimeFormatOptions, C.GMimeNewLineFormat)
@@ -91,5 +93,10 @@ fn C.g_mime_part_iter_next (&C._GMimePartIter) int //gboolean
 fn C.g_mime_object_get_content_type (&C._GMimeObject) &C._GMimeContentType
 fn C.g_mime_content_type_get_mime_type (&C._GMimeContentType) &char
 fn C.internet_address_mailbox_new() &C._InternetAddress
-fn C.internet_address_list_parse(C._GMimeParserOptions, &char) &C._InternetAddressList
+fn C.internet_address_list_parse(&C._GMimeParserOptions, &char) &C._InternetAddressList
+fn C.internet_address_list_length (&C._InternetAddressList) int
+fn C.internet_address_list_get_address (&C._InternetAddressList, int) &C._InternetAddress
+fn C.internet_address_get_name(&C._InternetAddress) &char
+fn C.internet_address_get_charset(&C._InternetAddress) &char
+fn C.internet_address_mailbox_get_addr(&C._InternetAddressMailbox) &char
 
