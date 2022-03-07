@@ -149,24 +149,23 @@ func main() {
 						tcell.KeyDown:
 					threads.EventHandler(s, ev)
 				case tcell.KeyCtrlA, // archive thread
+						tcell.KeyCtrlB, // (re)tag inbox
 						tcell.KeyCtrlS: // mark thread as spam
 					threads.EventHandler(s, ev) // we have to do this separate cause we need to
 					query.notify(s, true) // notify via query which isnt available in threads
 				case tcell.KeyPgUp, // page through the selected thread in view
 						tcell.KeyPgDn, //
-						tcell.KeyCtrlO, // open more lines of the selected mail
+						tcell.KeyCtrlC, // compose new email
+						tcell.KeyCtrlD, // save selected part of selected email
 						tcell.KeyCtrlJ, // next mail in thread
 						tcell.KeyCtrlK, // previous mail in thread
-						tcell.KeyCtrlP, // previous part in mail
 						tcell.KeyCtrlN, // next part in mail
-						tcell.KeyCtrlR, // reply to selected email
-						tcell.KeyCtrlD, // save selected part of selected email
-						tcell.KeyCtrlC: // compose new email
+						tcell.KeyCtrlO, // open more lines of the selected mail
+						tcell.KeyCtrlP, // previous part in mail
+						tcell.KeyCtrlR: // reply to selected email
 					mails.EventHandler(s, ev)
 				case tcell.KeyEscape: // terminate epistula
 					running = false
-				case tcell.KeyCtrlB: // test alert
-					s.Beep()
 				case tcell.KeyCtrlL: // refresh screen
 					s.Sync()
 				}
@@ -193,6 +192,7 @@ func main() {
 				case syscall.SIGHUP: // reread config
 					config = NewConfig()
 				case syscall.SIGUSR1: // refresh result set
+					s.Beep() // beep should trigger urgency hint on terminal window
 					query.notify(s, true)
 				case syscall.SIGUSR2: //
 					//

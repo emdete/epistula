@@ -99,10 +99,12 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 	switch ev := event.(type) {
 	case *tcell.EventKey:
 		switch ev.Key() {
-		case tcell.KeyCtrlA:
+		case tcell.KeyCtrlA: // archive
 			ThreadRemoveTag(this.threadEntries[this.selected_index].id, "unread")
 			ThreadRemoveTag(this.threadEntries[this.selected_index].id, "inbox")
-		case tcell.KeyCtrlS:
+		case tcell.KeyCtrlB: // re inbox
+			ThreadAddTag(this.threadEntries[this.selected_index].id, "inbox")
+		case tcell.KeyCtrlS: // spam
 			ThreadRemoveTag(this.threadEntries[this.selected_index].id, "unread")
 			ThreadRemoveTag(this.threadEntries[this.selected_index].id, "inbox")
 			ThreadAddTag(this.threadEntries[this.selected_index].id, "spam")
