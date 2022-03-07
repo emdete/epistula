@@ -3,58 +3,104 @@ module vmime
 import os
 import io.util
 
-pub struct Email {
-}
-
-pub fn (mut this Email) add_bcc(value string) {
-}
-
-pub fn (mut this Email) add_cc(value string) {
-}
-
-pub fn (mut this Email) add_from(value string) {
-}
-
-pub fn (mut this Email) add_message_id(value string) {
-}
-
-pub fn (mut this Email) add_references(value string) {
-}
-
-pub fn (mut this Email) add_reply_to(value string) {
-}
-
-pub fn (mut this Email) add_in_reply_to(value string) {
-}
-
-pub fn (mut this Email) set_subject(value string) {
-}
-
-pub fn (mut this Email) add_to(value string) {
-}
-
-pub fn (mut this Email) set_text_from_file(value string) {
-}
+const (
+	charset = cstr("UTF-8")
+)
 
 fn cstr(s string) &char {
 	return &char(s.str)
 }
 
-pub fn samplerun() {
-	myself := cstr("mdt@emdete.de")
-	myname := cstr("M. Dietrich")
-	charset := cstr("UTF-8")
-	//
+pub struct Session {
+mut:
+	open bool
+}
+
+pub fn session_open() &Session {
 	C.g_mime_init()
+	return &Session{ true }
+}
+
+pub fn (mut this Session) close() {
+	C.g_mime_shutdown()
+	this.open = false
+}
+
+pub struct Email {
+	message &C._GMimeMessage
+}
+
+pub fn (this &Session) email_new() &Email {
+	return &Email{ C.g_mime_message_new(C.gboolean(1)) }
+}
+
+fn parse_address(value string) (string, string) {
+	list := C.internet_address_list_parse(voidptr(0), cstr(value))
+	if list != voidptr(0) {
+		defer { C.g_object_unref(C.G_OBJECT(list)) }
+	}
+	return "", ""
+}
+
+pub fn (mut this Email) add_bcc(value string) {
+	fullname, emailaddress := parse_address(value)
+	C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_BCC), cstr(fullname), cstr(emailaddress))
+}
+
+pub fn (mut this Email) add_cc(value string) {
+	fullname, emailaddress := parse_address(value)
+	C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_CC), cstr(fullname), cstr(emailaddress))
+}
+
+pub fn (mut this Email) add_from(value string) {
+	fullname, emailaddress := parse_address(value)
+	C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_FROM), cstr(fullname), cstr(emailaddress))
+}
+
+pub fn (mut this Email) set_message_id(value string) {
+	C.g_mime_object_set_header(C.GMIME_OBJECT(this.message), cstr("User-Agent"), cstr(value), charset)
+}
+
+pub fn (mut this Email) set_references(value string) {
+}
+
+pub fn (mut this Email) add_sender(value string) {
+	fullname, emailaddress := parse_address(value)
+	C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_SENDER), cstr(fullname), cstr(emailaddress))
+}
+
+pub fn (mut this Email) add_reply_to(value string) {
+	fullname, emailaddress := parse_address(value)
+	C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_REPLY_TO), cstr(fullname), cstr(emailaddress))
+}
+
+pub fn (mut this Email) set_in_reply_to(id string) {
+}
+
+pub fn (mut this Email) set_subject(subject string) {
+	C.g_mime_message_set_subject(this.message, cstr(subject), charset)
+}
+
+pub fn (mut this Email) add_to(value string) {
+	fullname, emailaddress := parse_address(value)
+	C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_TO), cstr(fullname), cstr(emailaddress))
+}
+
+pub fn (mut this Email) set_text_from_file(value string) {
+}
+
+pub fn samplerun() {
+	emailaddress := cstr("mdt@emdete.de")
+	fullname := cstr("M. Dietrich")
 	//
 	message := C.g_mime_message_new(C.gboolean(1))
 	// meta / header
-	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_FROM), myname, myself)
-	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_SENDER), myname, myself)
-	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_REPLY_TO), myname, myself)
-	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_TO), myname, myself)
-	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_CC), myname, myself)
-	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_BCC), myname, myself)
+	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_FROM), fullname, emailaddress)
+	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_SENDER), fullname, emailaddress)
+	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_REPLY_TO), fullname, emailaddress)
+	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_TO), fullname, emailaddress)
+	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_CC), fullname, emailaddress)
+	C.g_mime_message_add_mailbox(message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_BCC), fullname, emailaddress)
 	C.g_mime_object_set_header(C.GMIME_OBJECT(message), cstr("User-Agent"), cstr("Epistula"), charset)
 	C.g_mime_object_set_header(C.GMIME_OBJECT(message), cstr("X-Epistula-Status"), cstr("I am not done"), charset)
 	date := C.g_date_time_new_from_unix_utc(int(C.time(/*C.NULL*/0)))
@@ -87,7 +133,7 @@ Will you be my +1?
 	// encrypt
 	{
 		recipients := C.g_ptr_array_new()
-		C.g_ptr_array_add(recipients, myself)
+		C.g_ptr_array_add(recipients, emailaddress)
 		C.g_ptr_array_add(recipients, cstr("test@sample.org"))
 		ctx := C.g_mime_gpg_context_new()
 		err := &C._GError(0)
@@ -137,8 +183,6 @@ Will you be my +1?
 		})
 	// fini
 	C.g_object_unref(C.G_OBJECT(message))
-	C.g_mime_charset_map_shutdown()
-	C.g_mime_shutdown()
 	return
 }
 

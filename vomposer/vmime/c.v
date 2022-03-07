@@ -25,10 +25,12 @@ mut:
 [heap] struct C._GMimeObject { }
 [heap] struct C._GMimeDataWrapper { }
 [heap] struct C._GMimeMessage { }
+[heap] struct C._InternetAddress { }
 [heap] struct C._GMimeStream { }
 [heap] struct C._GMimeMultipart { }
 [heap] struct C._GMimePart { }
 [heap] struct C._GPtrArray { }
+[heap] struct C._InternetAddressList { }
 [heap] struct C._GByteArray {
 mut:
 	data &char
@@ -88,4 +90,6 @@ fn C.g_mime_part_iter_get_current (&C._GMimePartIter) &C._GMimeObject
 fn C.g_mime_part_iter_next (&C._GMimePartIter) int //gboolean
 fn C.g_mime_object_get_content_type (&C._GMimeObject) &C._GMimeContentType
 fn C.g_mime_content_type_get_mime_type (&C._GMimeContentType) &char
+fn C.internet_address_mailbox_new() &C._InternetAddress
+fn C.internet_address_list_parse(C._GMimeParserOptions, &char) &C._InternetAddressList
 

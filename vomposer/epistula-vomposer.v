@@ -5,7 +5,10 @@ import vmime
 import os
 
 fn main() {
-	mut email := vmime.Email{}
+	mut session := vmime.session_open()
+	defer { session.close() }
+	mut email := session.email_new()
+	if false {
 	for arg in os.args[1..] {
 		if arg.starts_with("--") {
 			x := arg[2..].split_nth('=', 2)
@@ -13,10 +16,10 @@ fn main() {
 				"bcc" { email.add_bcc(x[1]) }
 				"cc" { email.add_cc(x[1]) }
 				"from" { email.add_from(x[1]) }
-				"message-id" { email.add_message_id(x[1]) }
-				"references" { email.add_references(x[1]) }
+				"message-id" { email.set_message_id(x[1]) }
+				"references" { email.set_references(x[1]) }
 				"reply-to" { email.add_reply_to(x[1]) }
-				"in-reply-to" { email.add_in_reply_to(x[1]) }
+				"in-reply-to" { email.set_in_reply_to(x[1]) }
 				"subject" { email.set_subject(x[1]) }
 				"to" { email.add_to(x[1]) }
 				"text" { email.set_text_from_file(x[1]) }
@@ -26,6 +29,7 @@ fn main() {
 		} else {
 			// to
 		}
+	}
 	}
 	vmime.samplerun()
 }

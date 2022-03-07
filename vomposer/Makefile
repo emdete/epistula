@@ -23,7 +23,7 @@ run: epistula-vomposer
 
 dbg:
 
-epistula-vomposer: epistula-vomposer.v
+epistula-vomposer: epistula-vomposer.v vmime/*.v
 	v $(VFLAGS) epistula-vomposer.v
 
 uitest: uitest.v
