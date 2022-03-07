@@ -3,17 +3,28 @@ CFLAGS=`pkg-config --cflags gmime-3.0`
 LDFLAGS=`pkg-config --libs gmime-3.0`
 VFLAGS=-show-c-output -showcc -g -keepc -cg
 VFLAGS=-keepc -cg
+TEMPFILE=/tmp/epistula-vomposer-tmp
 
 all: cmime
-	./$< > /tmp/cmime
+	./$< \
+		> /tmp/cmime
 
-run: vmime
-	./$< > /tmp/vmime
+run: epistula-vomposer
+	./$< \
+			--from="M. <mdt@emdete.de>" \
+			--reply \
+			--reply-text=$(TEMPFILE) \
+			--reply-message-id=000 \
+			--to="M. <mdt@emdete.de>" \
+			--subject=Epistula \
+			--cc="M. <mdt@emdete.de>" \
+			--bcc="M. <mdt@emdete.de>" \
+		> /tmp/epistula-vomposer
 
 dbg:
 
-vmime: vmime.v
-	v $(VFLAGS) vmime.v
+epistula-vomposer: epistula-vomposer.v
+	v $(VFLAGS) epistula-vomposer.v
 
 uitest: uitest.v
 	v $(VFLAGS) uitest.v
