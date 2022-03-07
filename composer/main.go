@@ -160,7 +160,7 @@ func main() {
 			var procAttr os.ProcAttr
 			procAttr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}
 			if proc, err := os.StartProcess(EDITOR, []string{EDITOR,
-					"+set ft=mail", // switch to meail syntax
+					"+set ft=mail", // switch to email syntax
 					"+set fileencoding=utf-8", // use utf8
 					"+set enc=utf-8", // use utf8
 					"+set fo+=w", // do wsf
@@ -257,7 +257,7 @@ func main() {
 		}
 	}
 	// TODO send USR1 to browser to notify of db change
-	ioutil.WriteFile("/tmp/temp", buffer, 0600)
+	// ioutil.WriteFile("/tmp/temp", buffer, 0600)
 }
 
 func ParseFile(filename string) *gmime.Envelope {
