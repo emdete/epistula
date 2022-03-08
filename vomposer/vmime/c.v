@@ -90,7 +90,7 @@ fn C.internet_address_mailbox_get_addr(&C._InternetAddressMailbox) &char
 fn C.internet_address_mailbox_new() &C._InternetAddress
 fn C.g_byte_array_free(&C._GByteArray, int) &char
 fn C.time(voidptr) int
-fn C.g_mime_message_get_all_recipients (&C.GMimeMessage) &C.InternetAddressList
+fn C.g_mime_message_get_all_recipients (&C._GMimeMessage) &C._InternetAddressList
 fn C.g_mime_stream_file_open(&char, &char, &&C._GError) &C._GMimeStream
 fn C.g_mime_stream_close (&C._GMimeStream)
 
