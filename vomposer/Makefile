@@ -11,14 +11,15 @@ all: cmime
 
 run: epistula-vomposer
 	./$< \
+			--bcc="M. <mdt@emdete.de>" \
+			--cc="M. <mdt@emdete.de>" \
 			--from="M. <mdt@emdete.de>" \
 			--reply \
-			--reply-text=$(TEMPFILE) \
 			--reply-message-id=000 \
-			--to="M. <mdt@emdete.de>" \
+			--reply-text=$(TEMPFILE) \
 			--subject=Epistula \
-			--cc="M. <mdt@emdete.de>" \
-			--bcc="M. <mdt@emdete.de>" \
+			--text=/etc/hostname \
+			--to="M. <mdt@emdete.de>" \
 		> /tmp/epistula-vomposer
 
 dbg:
