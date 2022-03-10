@@ -35,7 +35,7 @@ func (this *Threads) Close() {
 
 func (this *Threads) Draw(s tcell.Screen) (ret bool) {
 	this.ClearArea(s)
-	selected_style := tcell.StyleDefault.Foreground(tcell.GetColor("#333333")).Background(tcell.GetColor("#cc7711"))
+	selected_style := tcell.StyleDefault.Background(tcell.ColorDarkGreen)
 	for i, threadEntry := range this.threadEntries[this.offset:] {
 		//log.Printf("%d: %v", i, threadEntry)
 		var cs1, cs2 tcell.Style

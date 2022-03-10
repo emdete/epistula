@@ -9,24 +9,26 @@ import (
 type Frames struct {
 	Area
 	pos_vertical_bar int
+	style tcell.Style
 }
 
 func NewFrames(s tcell.Screen, pos_vertical_bar int) (this Frames) {
 	log.Printf("NewFrames")
 	this = Frames{}
 	this.pos_vertical_bar = pos_vertical_bar
-	s.SetStyle(tcell.StyleDefault) //.Background(tcell.ColorBlack).Background(tcell.GetColor("#000000")).Foreground(tcell.ColorWhite))
+	//s.SetStyle(tcell.StyleDefault)
+	this.style = tcell.StyleDefault.Foreground(tcell.GetColor("#cc7711"))
 	return
 }
 
 func (this *Frames) Draw(s tcell.Screen) (ret bool) {
 	this.pos_vertical_bar = this.dx / 3
 	for x := 0; x < this.dx; x++ {
-		this.SetContent(s, x, 2, tcell.RuneHLine, nil, tcell.StyleDefault)
+		this.SetContent(s, x, 2, tcell.RuneHLine, nil, this.style)
 	}
-	this.SetContent(s, this.pos_vertical_bar, 2, tcell.RuneTTee, nil, tcell.StyleDefault)
+	this.SetContent(s, this.pos_vertical_bar, 2, tcell.RuneTTee, nil, this.style)
 	for y := 3; y < this.dy; y++ {
-		this.SetContent(s, this.pos_vertical_bar, y, tcell.RuneVLine, nil, tcell.StyleDefault)
+		this.SetContent(s, this.pos_vertical_bar, y, tcell.RuneVLine, nil, this.style)
 	}
 	return true
 }
