@@ -45,6 +45,7 @@ The browser has a simple set of keys to be controlled. The UI has three areas: T
 	- All normal characters
 	- Left, right, home and end
 	- Tab resets the query
+	- Control X empties query
 	- Enter execute query
 - Thread list:
 	- Up and down (next previous thread)

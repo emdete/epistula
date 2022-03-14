@@ -143,6 +143,7 @@ func main() {
 						tcell.KeyDelete,
 						tcell.KeyHome,
 						tcell.KeyEnd,
+						tcell.KeyCtrlX, // delete all
 						tcell.KeyTab:
 					query.EventHandler(s, ev)
 				case tcell.KeyUp, // navigate through the result set

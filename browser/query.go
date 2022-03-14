@@ -43,6 +43,12 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) {
 	switch ev := event.(type) {
 	case *tcell.EventKey:
 		switch ev.Key() {
+		case tcell.KeyCtrlX: // delete all
+			if len(this.query) > 0 {
+				this.query = []rune("")
+				this.pos_cur = 0
+				this.dirty = true
+			}
 		case tcell.KeyRune:
 			if this.pos_cur < len(this.query) {
 				this.query = append(this.query, ' ') // create empty space
