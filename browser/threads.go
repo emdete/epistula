@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"fmt"
+	"strings"
 	"time"
 	// see ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.4.1-0.20210905002822-f057f0a857a1/
 	"github.com/gdamore/tcell/v2"
@@ -140,7 +141,19 @@ func (this *Threads) EventHandler(s tcell.Screen, event tcell.Event) {
 		case tcell.WheelDown:
 			this.dirty = this.doDown(true)
 		}
-	case *EventQuery:
+	case *EventTagging: // tag thread
+		log.Printf("EventTagging %v", ev)
+		for _, tag := range strings.Split(ev.tags, " ") {
+			switch tag[0] {
+			case '+':
+				ThreadAddTag(this.threadEntries[this.selected_index].id, tag[1:])
+			case '-':
+				ThreadRemoveTag(this.threadEntries[this.selected_index].id, tag[1:])
+			default:
+				ThreadAddTag(this.threadEntries[this.selected_index].id, tag)
+			}
+		}
+	case *EventDoQuery:
 		this.do_query(s, ev.query, ev.refresh)
 		old_index = -1
 		this.dirty = true

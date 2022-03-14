@@ -47,6 +47,7 @@ The browser has a simple set of keys to be controlled. The UI has three areas: T
 	- Tab resets the query
 	- Control X empties query
 	- Enter execute query
+	- prefix a query with ":" to actually tag the current thread, not query
 - Thread list:
 	- Up and down (next previous thread)
 	- Control up and down (page up/down)

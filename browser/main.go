@@ -153,7 +153,7 @@ func main() {
 						tcell.KeyCtrlB, // (re)tag inbox
 						tcell.KeyCtrlS: // mark thread as spam
 					threads.EventHandler(s, ev) // we have to do this separate cause we need to
-					query.notify(s, true) // notify via query which isnt available in threads
+					query.DoQuery(s, true) // notify via query which isnt available in threads
 				case tcell.KeyPgUp, // page through the selected thread in view
 						tcell.KeyPgDn, //
 						tcell.KeyCtrlC, // compose new email
@@ -178,11 +178,13 @@ func main() {
 				} else if query.IsEventIn(ev) {
 					query.EventHandler(s, event)
 				}
-			case *tcell.EventPaste:
+			case *tcell.EventPaste: // paste from clipboard
 				query.EventHandler(s, event)
-			case *tcell.EventResize:
+			case *tcell.EventResize: // resize term
 				frames.EventHandler(s, event)
-			case *EventQuery: // query input reports new querystring -> threads
+			case *EventDoQuery: // query input reports new querystring -> threads
+				threads.EventHandler(s, event)
+			case *EventTagging: // tag thread
 				threads.EventHandler(s, event)
 			case *EventThreadsStatus: // threads report new thread list / stats -> status
 				status.EventHandler(s, event)
@@ -194,7 +196,7 @@ func main() {
 					config = NewConfig()
 				case syscall.SIGUSR1: // refresh result set
 					s.Beep() // beep should trigger urgency hint on terminal window
-					query.notify(s, true)
+					query.DoQuery(s, true)
 				case syscall.SIGUSR2: //
 					//
 				}

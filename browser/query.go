@@ -21,7 +21,7 @@ func NewQuery(s tcell.Screen) (this Query) {
 	this.pos_cur = len(this.query)
 	this.pasting = false
 	this.dirty = true
-	this.notify(s, false)
+	this.DoQuery(s, false)
 	return
 }
 
@@ -97,7 +97,11 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) {
 			this.pos_cur = len(this.query)
 			this.dirty = true
 		case tcell.KeyEnter:
-			this.notify(s, false)
+			if this.query[0] == ':' {
+				this.Tagging(s, false)
+			} else {
+				this.DoQuery(s, false)
+			}
 		case tcell.KeyTab:
 			this.query = append(QUERY_DEFAULT, QUERY_SUFFIX...)
 			this.pos_cur = len(this.query)
@@ -132,14 +136,14 @@ func (this *Query) EventHandler(s tcell.Screen, event tcell.Event) {
 	}
 }
 
-type EventQuery struct {
+type EventDoQuery struct {
 	tcell.EventTime
 	query string
 	refresh bool
 }
 
-func (this *Query) notify(s tcell.Screen, refresh bool) {
-	ev := &EventQuery{}
+func (this *Query) DoQuery(s tcell.Screen, refresh bool) {
+	ev := &EventDoQuery{}
 	ev.SetEventNow()
 	if strings.HasSuffix(string(this.query), string(QUERY_SUFFIX)) {
 		// if the user did not change the QUERY_SUFFIX, she doesnt want that considered, cut it
@@ -147,6 +151,22 @@ func (this *Query) notify(s tcell.Screen, refresh bool) {
 	} else {
 		ev.query = string(this.query)
 	}
+	ev.refresh = refresh
+	if err := s.PostEvent(ev); err != nil {
+		panic(err)
+	}
+}
+
+type EventTagging struct {
+	tcell.EventTime
+	tags string
+	refresh bool
+}
+
+func (this *Query) Tagging(s tcell.Screen, refresh bool) {
+	ev := &EventTagging{}
+	ev.SetEventNow()
+	ev.tags = string(this.query[1:])
 	ev.refresh = refresh
 	if err := s.PostEvent(ev); err != nil {
 		panic(err)
