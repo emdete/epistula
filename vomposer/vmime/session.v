@@ -1,7 +1,7 @@
 module vmime
 
 // a session to ensure g_mime_init/g_mime_shutdown
-pub struct Session {
+[heap] pub struct Session {
 mut:
 	open bool
 }

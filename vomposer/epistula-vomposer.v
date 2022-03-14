@@ -32,9 +32,11 @@ fn main() {
 	}
 	// "X-Epistula-Status", "I am not done"
 	email.edit()
+
 	email.set_user_agent("Epistula")
 	email.set_date_now()
 	email.set_message_id("epistula.de")
+	email.encrypt()
 }
 
 fn read_file(filename string) string {
@@ -43,15 +45,3 @@ fn read_file(filename string) string {
 	return buffer.bytestr()
 }
 
-//	multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
-//	C.g_mime_text_part_set_charset(textpart, cstr("utf-8"))
-//	C.g_mime_multipart_add(multipart, C.GMIME_OBJECT(textpart))
-//	mail_attach(multipart, "../screenshot.png")
-//	C.g_object_unref(C.G_OBJECT(multipart))
-//	mmsg := email_parse(tempfile)
-//	status := unsafe { C.g_mime_object_get_header(C.GMIME_OBJECT(mmsg), cstr("X-Epistula-Status")).vstring() }
-//	mail_walk(mmsg, fn (part &C._GMimeObject) bool {
-//		ct := C.g_mime_object_get_content_type (C.GMIME_OBJECT(part))
-//		s := unsafe { C.g_mime_content_type_get_mime_type (ct).vstring() }
-//		return true
-//	})

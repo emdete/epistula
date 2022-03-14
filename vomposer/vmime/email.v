@@ -6,6 +6,7 @@ import os
 // representing an email
 pub struct Email {
 mut:
+	session &Session
 	message &C._GMimeMessage // gmime3 mail message structure
 	content Content // multipart content of non simple mails
 	simple bool // bare email intended for edit
@@ -15,6 +16,7 @@ mut:
 pub fn (this &Session) email_new() &Email {
 	message := C.g_mime_message_new(C.gboolean(1))
 	return &Email{
+		this
 		message
 		Content {
 			C.g_mime_multipart_new_with_subtype(cstr("mixed"))
@@ -179,10 +181,24 @@ pub fn (mut this Email) encrypt() bool {
 	return ret
 }
 
+//
+pub fn (mut this Email) attach() {
+//	multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
+//	C.g_mime_text_part_set_charset(textpart, cstr("utf-8"))
+//	C.g_mime_multipart_add(multipart, C.GMIME_OBJECT(textpart))
+//	C.g_object_unref(C.G_OBJECT(multipart))
+//	status := unsafe { C.g_mime_object_get_header(C.GMIME_OBJECT(mmsg), cstr("X-Epistula-Status")).vstring() }
+//	mail_walk(mmsg, fn (part &C._GMimeObject) bool {
+//		ct := C.g_mime_object_get_content_type (C.GMIME_OBJECT(part))
+//		s := unsafe { C.g_mime_content_type_get_mime_type (ct).vstring() }
+//		return true
+//	})
+}
+
 // kick off editor
 pub fn (mut this Email) edit() {
-	mut filename := ''
 	if ! this.simple { panic("aproach to edit non simple email") }
+	mut filename := ''
 	// create temp file
 	mut file, tempfile := util.temp_file(util.TempFileOptions{pattern: "epistula.vomposer."}) or { panic("temp_file failed") }
 	file.close()
@@ -206,10 +222,13 @@ pub fn (mut this Email) edit() {
 		"+set enc=utf-8", // use utf8
 		"+set fo+=w", // do wsf
 		"+set fo-=ro", // dont repeat ">.." on new lines
+		"+/^$", // jump to line after headers
 		filename,
 	])
 	p.run()
 	p.wait()
 	p.close()
+	C.g_object_unref(C.G_OBJECT(this.message))
+	this.message = this.session.email_parse(filename)
 }
 

@@ -39,7 +39,7 @@ fn C.g_date_time_new_from_unix_utc(int) &C._GDateTime
 fn C.g_date_time_unref(&C._GDateTime)
 fn C.g_error_free(&C._GError)
 fn C.g_mime_charset_map_shutdown()
-fn C.g_mime_content_type_get_mime_type (&C._GMimeContentType) &char
+fn C.g_mime_content_type_get_mime_type(&C._GMimeContentType) &char
 fn C.g_mime_data_wrapper_new_with_stream(&C._GMimeStream, C.GMimeContentEncoding) &C._GMimeDataWrapper
 fn C.g_mime_format_options_get_default() &C._GMimeFormatOptions
 fn C.g_mime_format_options_set_newline_format(&C._GMimeFormatOptions, C.GMimeNewLineFormat)
@@ -54,17 +54,17 @@ fn C.g_mime_message_set_subject(&C._GMimeMessage, &char, &char)
 fn C.g_mime_multipart_add(&C._GMimeMultipart, &C._GMimeObject)
 fn C.g_mime_multipart_encrypted_encrypt(&C._GMimeCryptoContext, &C.GObject, int, voidptr, int, &C._GPtrArray, &&C._GError) &C.GMimeMultipartEncrypted
 fn C.g_mime_multipart_new_with_subtype(&char) &C._GMimeMultipart
-fn C.g_mime_object_get_content_type (&C._GMimeObject) &C._GMimeContentType
+fn C.g_mime_object_get_content_type(&C._GMimeObject) &C._GMimeContentType
 fn C.g_mime_object_get_header(&C._GMimeObject, &char) &char
 fn C.g_mime_object_set_header(&C._GMimeObject, &char, &char, &char)
 fn C.g_mime_object_write_to_stream(&C._GMimeObject, &C._GMimeFormatOptions, &C._GMimeStream) int
 fn C.g_mime_parser_construct_message(&C._GMimeParser, &C._GMimeParserOptions) &C._GMimeMessage
 fn C.g_mime_parser_new_with_stream(&C._GMimeStream) &C._GMimeParser
 fn C.g_mime_parser_options_get_default() &C._GMimeParserOptions
-fn C.g_mime_part_iter_free (&C._GMimePartIter)
-fn C.g_mime_part_iter_get_current (&C._GMimePartIter) &C._GMimeObject
-fn C.g_mime_part_iter_new (&C._GMimeObject) &C._GMimePartIter
-fn C.g_mime_part_iter_next (&C._GMimePartIter) int //gboolean
+fn C.g_mime_part_iter_free(&C._GMimePartIter)
+fn C.g_mime_part_iter_get_current(&C._GMimePartIter) &C._GMimeObject
+fn C.g_mime_part_iter_new(&C._GMimeObject) &C._GMimePartIter
+fn C.g_mime_part_iter_next(&C._GMimePartIter) int //gboolean
 fn C.g_mime_part_new_with_type(&char, &char) &C._GMimePart
 fn C.g_mime_part_set_content(&C._GMimePart, &C._GMimeDataWrapper)
 fn C.g_mime_part_set_content_encoding(&C._GMimePart, C.GMimeContentEncoding)
@@ -83,16 +83,16 @@ fn C.g_ptr_array_free(&C._GPtrArray, int) &char
 fn C.g_ptr_array_new() &C._GPtrArray
 fn C.internet_address_get_charset(&C._InternetAddress) &char
 fn C.internet_address_get_name(&C._InternetAddress) &char
-fn C.internet_address_list_get_address (&C._InternetAddressList, int) &C._InternetAddress
-fn C.internet_address_list_length (&C._InternetAddressList) int
+fn C.internet_address_list_get_address(&C._InternetAddressList, int) &C._InternetAddress
+fn C.internet_address_list_length(&C._InternetAddressList) int
 fn C.internet_address_list_parse(&C._GMimeParserOptions, &char) &C._InternetAddressList
 fn C.internet_address_mailbox_get_addr(&C._InternetAddressMailbox) &char
 fn C.internet_address_mailbox_new() &C._InternetAddress
 fn C.g_byte_array_free(&C._GByteArray, int) &char
 fn C.time(voidptr) int
-fn C.g_mime_message_get_all_recipients (&C._GMimeMessage) &C._InternetAddressList
+fn C.g_mime_message_get_all_recipients(&C._GMimeMessage) &C._InternetAddressList
 fn C.g_mime_stream_file_open(&char, &char, &&C._GError) &C._GMimeStream
-fn C.g_mime_stream_close (&C._GMimeStream)
+fn C.g_mime_stream_close(&C._GMimeStream)
 
 fn cstr(s string) &char {
 	return &char(s.str)
