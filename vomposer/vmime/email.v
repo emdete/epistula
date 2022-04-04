@@ -244,12 +244,17 @@ pub fn (mut this Email) attach(filename string) {
 		if file_info != voidptr(0) {
 			defer { C.g_object_unref(C.G_OBJECT(file_info)) }
 			ct := C.g_file_info_get_content_type(file_info)
-			content_type := unsafe { ct.vstring() }
-			cts := cstr(content_type)
-			type_ = unsafe { C.g_mime_content_type_get_media_type(cts).vstring() }
-			subtype = unsafe { C.g_mime_content_type_get_media_subtype(cts).vstring() }
+			if ct != voidptr(0) {
+				tp := C.g_mime_content_type_parse(C.g_mime_parser_options_get_default(), ct)
+				mt := C.g_mime_content_type_get_media_type(tp)
+				ms := C.g_mime_content_type_get_media_subtype(tp)
+				if mt != voidptr(0) && ms != voidptr(0) {
+					type_ = unsafe { mt.vstring() }
+					subtype = unsafe { ms.vstring() }
+				}
+			}
 		} else {
-			eprintln("no file_info")
+			eprintln("no file_info $err")
 		}
 	} else {
 		eprintln("no file")
@@ -267,6 +272,7 @@ pub fn (mut this Email) attach(filename string) {
 	// C.g_mime_part_set_content_md5(part,
 	// C.g_mime_part_set_content_location(part,
 	C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(part))
+	//C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(this.multipart))
 }
 
 //	C.g_mime_multipart_add(multipart, C.GMIME_OBJECT(textpart))
