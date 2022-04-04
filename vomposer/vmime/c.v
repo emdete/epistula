@@ -5,15 +5,18 @@ module vmime
 
 #include "glib.h"
 #include "glib/gstdio.h"
-
+#include "gio/gio.h"
 #include "gmime/gmime.h"
 
 [heap] struct C._GError { domain int code int message &char }
 [heap] struct C._GByteArray { data &char len int}
 [heap] struct C.GObject { }
+[heap] struct C._GFileInfo { }
+[heap] struct C._GFile { }
 [heap] struct C._GDateTime { }
 [heap] struct C._GMimeContentType { }
 [heap] struct C._GMimeCryptoContext { }
+[heap] struct C._GCancellable { }
 [heap] struct C._GMimeDataWrapper { }
 [heap] struct C._GMimeFormatOptions { }
 [heap] struct C._GMimeMessage { }
@@ -93,8 +96,16 @@ fn C.time(voidptr) int
 fn C.g_mime_message_get_all_recipients(&C._GMimeMessage) &C._InternetAddressList
 fn C.g_mime_stream_file_open(&char, &char, &&C._GError) &C._GMimeStream
 fn C.g_mime_stream_close(&C._GMimeStream)
+	// /usr/include/glib-2.0/gio/gfile.h
+	// /usr/include/glib-2.0/gio/gfileinfo.h
+fn C.g_file_new_for_path(&char) &C._GFile
+fn C.g_file_query_info(&C._GFile, &char, int/*C._GFileQueryInfoFlags*/, &C._GCancellable, &&C._GError) &C._GFileInfo
+fn C.g_file_info_get_content_type(&C._GFileInfo) &char
 
 fn cstr(s string) &char {
 	return &char(s.str)
 }
+
+//C.G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE &char // "standard::content-type"     /* string */
+//C.G_FILE_ATTRIBUTE_STANDARD_TYPE &char // "standard::type"                     /* uint32 (GFileType) */
 

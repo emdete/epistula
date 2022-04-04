@@ -10,6 +10,10 @@ all: cmime
 		> /tmp/cmime
 
 run: epistula-vomposer
+
+
+dbg: epistula-vomposer
+	echo € > $(TEMPFILE)
 	./$< \
 			--bcc="M. <mdt@emdete.de>" \
 			--cc="M. <mdt@emdete.de>" \
@@ -21,8 +25,6 @@ run: epistula-vomposer
 			--text=/etc/hostname \
 			--to="M. <mdt@emdete.de>" \
 		> /tmp/epistula-vomposer
-
-dbg:
 
 epistula-vomposer: epistula-vomposer.v vmime/*.v
 	v $(VFLAGS) epistula-vomposer.v

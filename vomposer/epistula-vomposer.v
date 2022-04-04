@@ -27,16 +27,38 @@ fn main() {
 			}
 			eprintln("arg $x")
 		} else {
-			// to
+			email.add_to(arg)
 		}
 	}
-	// "X-Epistula-Status", "I am not done"
-	email.edit()
+	mut done := false
+	mut abort := false
+	for ! done && ! abort{
+		email.set_header_x("X-Epistula-Status", "I am not done")
+		email.set_header_x("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'. Add a 'abort' to abort sending (editings lost).")
+		email.set_header_x("X-Epistula-Attachments", "#put space delimted list of filenames here#")
+		email.edit()
 
-	email.set_user_agent("Epistula")
-	email.set_date_now()
-	email.set_message_id("epistula.de")
-	email.encrypt()
+		status := email.get_header("X-Epistula-Status")
+		done = (status.index("not done") or { -1 }) < 0
+		abort = (status.index("abort") or { -1 }) >= 0
+
+		attachments := email.get_header("X-Epistula-Attachments")
+		if ! attachments.starts_with("#") {
+			for attachment in attachments.split_any(" ;,") {
+				eprintln("attachment $attachment")
+				email.attach(attachment)
+			}
+		}
+	}
+
+	if ! abort {
+		email.set_user_agent("Epistula")
+		email.set_date_now()
+		email.set_message_id("epistula.de")
+		email.encrypt()
+	} else {
+		eprintln("aborted")
+	}
 }
 
 fn read_file(filename string) string {
