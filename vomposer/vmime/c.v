@@ -35,6 +35,7 @@ module vmime
 fn C.GMIME_IS_STREAM(voidptr) int
 fn C.GMIME_OBJECT(voidptr) &C._GMimeObject
 fn C.GMIME_STREAM(voidptr) &C._GMimeStream
+fn C.GMIME_PART(voidptr) &C._GMimePart
 fn C.GMIME_STREAM_MEM(voidptr) &C._GMimeStreamMem
 fn C.G_OBJECT(voidptr) &C.GObject
 fn C.INTERNET_ADDRESS_MAILBOX(voidptr) &C._InternetAddressMailbox
@@ -101,6 +102,8 @@ fn C.g_mime_stream_close(&C._GMimeStream)
 fn C.g_file_new_for_path(&char) &C._GFile
 fn C.g_file_query_info(&C._GFile, &char, int/*C._GFileQueryInfoFlags*/, &C._GCancellable, &&C._GError) &C._GFileInfo
 fn C.g_file_info_get_content_type(&C._GFileInfo) &char
+fn C.g_mime_content_type_get_media_type(&char) &char
+fn C.g_mime_content_type_get_media_subtype(&char) &char
 
 fn cstr(s string) &char {
 	return &char(s.str)

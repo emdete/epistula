@@ -113,8 +113,11 @@ pub fn (mut this Email) set_header_x(headername string, value string) {
 
 // get additional headers
 pub fn (mut this Email) get_header(headername string) string {
-	h := C.g_mime_object_get_header(C.GMIME_OBJECT(this.message), cstr(headername))
-	return unsafe { h.vstring() }
+	headervalue := C.g_mime_object_get_header(C.GMIME_OBJECT(this.message), cstr(headername))
+	if headervalue != voidptr(0) {
+		return unsafe { headervalue.vstring() }
+	}
+	return ""
 }
 
 // set current date
@@ -127,10 +130,11 @@ pub fn (mut this Email) set_date_now() {
 // set plain text
 pub fn (mut this Email) set_text(text string) {
 	textpart := C.g_mime_text_part_new_with_subtype(cstr("plain"))
-	r := '\u2000' // en quad: enforce UTF8 in gmime :/
-	C.g_mime_text_part_set_text(textpart, cstr(text + r))
+	defer { C.g_object_unref(C.G_OBJECT(textpart)) }
+	C.g_mime_text_part_set_text(textpart, cstr(text))
+	C.g_mime_text_part_set_charset(textpart, charset)
+	C.g_mime_part_set_content_encoding(C.GMIME_PART(textpart), C.GMimeContentEncoding(C.GMIME_CONTENT_ENCODING_8BIT))
 	C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(textpart))
-	C.g_object_unref(C.G_OBJECT(textpart))
 }
 
 // walk email parts
@@ -241,14 +245,16 @@ pub fn (mut this Email) attach(filename string) {
 			defer { C.g_object_unref(C.G_OBJECT(file_info)) }
 			ct := C.g_file_info_get_content_type(file_info)
 			content_type := unsafe { ct.vstring() }
-			eprintln("content type '$content_type'")
+			cts := cstr(content_type)
+			type_ = unsafe { C.g_mime_content_type_get_media_type(cts).vstring() }
+			subtype = unsafe { C.g_mime_content_type_get_media_subtype(cts).vstring() }
 		} else {
 			eprintln("no file_info")
 		}
 	} else {
 		eprintln("no file")
 	}
-
+	eprintln("content type '$type_/$subtype'")
 	part := C.g_mime_part_new_with_type(cstr(type_), cstr(subtype))
 	defer { C.g_object_unref(C.G_OBJECT(part)) }
 	C.g_mime_part_set_filename(part, cstr(os.base(filename)))
@@ -263,11 +269,7 @@ pub fn (mut this Email) attach(filename string) {
 	C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(part))
 }
 
-//	multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
-//	C.g_mime_text_part_set_charset(textpart, cstr("utf-8"))
 //	C.g_mime_multipart_add(multipart, C.GMIME_OBJECT(textpart))
-//	C.g_object_unref(C.G_OBJECT(multipart))
-//	status := unsafe { C.g_mime_object_get_header(C.GMIME_OBJECT(mmsg), cstr("X-Epistula-Status")).vstring() }
 //	mail_walk(mmsg, fn (part &C._GMimeObject) bool {
 //		ct := C.g_mime_object_get_content_type (C.GMIME_OBJECT(part))
 //		s := unsafe { C.g_mime_content_type_get_mime_type (ct).vstring() }
