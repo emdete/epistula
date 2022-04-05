@@ -62,6 +62,7 @@ fn C.g_mime_object_get_content_type(&C._GMimeObject) &C._GMimeContentType
 fn C.g_mime_object_get_header(&C._GMimeObject, &char) &char
 fn C.g_mime_object_set_header(&C._GMimeObject, &char, &char, &char)
 fn C.g_mime_object_write_to_stream(&C._GMimeObject, &C._GMimeFormatOptions, &C._GMimeStream) int
+fn C.g_mime_object_to_string(&C._GMimeObject, C._GMimeFormatOptions) &char
 fn C.g_mime_parser_construct_message(&C._GMimeParser, &C._GMimeParserOptions) &C._GMimeMessage
 fn C.g_mime_parser_new_with_stream(&C._GMimeStream) &C._GMimeParser
 fn C.g_mime_parser_options_get_default() &C._GMimeParserOptions
@@ -107,7 +108,4 @@ fn C.g_mime_content_type_parse(&C._GMimeParserOptions, &char) &C._GMimeContentTy
 fn cstr(s string) &char {
 	return &char(s.str)
 }
-
-//C.G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE &char // "standard::content-type"     /* string */
-//C.G_FILE_ATTRIBUTE_STANDARD_TYPE &char // "standard::type"                     /* uint32 (GFileType) */
 

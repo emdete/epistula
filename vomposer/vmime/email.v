@@ -275,6 +275,33 @@ pub fn (mut this Email) attach(filename string) {
 	//C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(this.multipart))
 }
 
+pub fn (mut this Email) transfer() int {
+	format := C.g_mime_format_options_get_default()
+	C.g_mime_format_options_set_newline_format(format, C.GMimeNewLineFormat(C.GMIME_NEWLINE_FORMAT_DOS))
+	mailstring := C.g_mime_object_to_string(C.GMIME_OBJECT(this.message), &format)
+	if mailstring == voidptr(0) {
+		eprintln("error getting mail as char buffer")
+		return -1
+	}
+	buffer := unsafe { mailstring.vstring() }
+	for commandline in [
+		["sendmail", "-t", ], // send the email
+		["notmuch", "insert", "+sent", "+inbox"], // store the email
+	] {
+		mut process := os.new_process(commandline[0])
+		defer { process.close() }
+		process.set_args(commandline[1..])
+		process.run()
+		process.stdin_write(buffer)
+		process.wait()
+		if process.code != 0 {
+			eprintln("error running process $commandline[0]: $process.err")
+			return process.code
+		}
+	}
+	return 0
+}
+
 //	C.g_mime_multipart_add(multipart, C.GMIME_OBJECT(textpart))
 //	mail_walk(mmsg, fn (part &C._GMimeObject) bool {
 //		ct := C.g_mime_object_get_content_type (C.GMIME_OBJECT(part))

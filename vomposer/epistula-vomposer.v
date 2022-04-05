@@ -39,15 +39,16 @@ fn main() {
 		email.edit()
 
 		status := email.get_header("X-Epistula-Status")
-		done = (status.index("not done") or { -1 }) < 0
 		abort = (status.index("abort") or { -1 }) >= 0
-
-		attachments := email.get_header("X-Epistula-Attachments")
-		if ! attachments.starts_with("#") {
-			for attachment in attachments.split_any(" ;,") {
-				eprintln("attachment $attachment")
-				email.attach(attachment)
+		if ! abort {
+			attachments := email.get_header("X-Epistula-Attachments")
+			if ! attachments.starts_with("#") {
+				for attachment in attachments.split_any(" ;,") {
+					eprintln("attachment $attachment")
+					email.attach(attachment)
+				}
 			}
+			done = (status.index("not done") or { -1 }) < 0
 		}
 	}
 
@@ -56,6 +57,7 @@ fn main() {
 		email.set_date_now()
 		email.set_message_id("epistula.de")
 		email.encrypt()
+		email.transfer()
 	} else {
 		eprintln("aborted")
 	}
