@@ -14,10 +14,12 @@ mut:
 // create new from session
 pub fn (this &Session) email_new() &Email {
 	message := C.g_mime_message_new(C.gboolean(1))
+	multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
+	C.g_mime_message_set_mime_part(message, C.GMIME_OBJECT(multipart))
 	return &Email{
 		this
 		message
-		C.g_mime_multipart_new_with_subtype(cstr("mixed"))
+		multipart
 	}
 }
 
@@ -41,55 +43,79 @@ pub fn (mut this Email) close() {
 }
 
 // set to
-pub fn (mut this Email) add_to(value string) {
-	parse_address(value, fn [mut this](fullname string, emailaddress string, cset string) {
+pub fn (mut this Email) add_to(value &AddressList) {
+	value.iterate(fn [mut this](fullname string, emailaddress string, cset string) {
 		C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_TO), cstr(fullname), cstr(emailaddress))
 	})
 }
 
+pub fn (mut this Email) get_to() &C._InternetAddressList {
+	return C.g_mime_message_get_to (this.message)
+}
+
 // set carbon copy
-pub fn (mut this Email) add_cc(value string) {
-	parse_address(value, fn [mut this](fullname string, emailaddress string, cset string) {
+pub fn (mut this Email) add_cc(value &AddressList) {
+	value.iterate(fn [mut this](fullname string, emailaddress string, cset string) {
 		C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_CC), cstr(fullname), cstr(emailaddress))
 	})
 }
 
+pub fn (mut this Email) get_cc() &C._InternetAddressList {
+	return C.g_mime_message_get_cc (this.message)
+}
+
 // set blind carbon copy
-pub fn (mut this Email) add_bcc(value string) {
-	parse_address(value, fn [mut this](fullname string, emailaddress string, cset string) {
+pub fn (mut this Email) add_bcc(value &AddressList) {
+	value.iterate(fn [mut this](fullname string, emailaddress string, cset string) {
 		C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_BCC), cstr(fullname), cstr(emailaddress))
 	})
 }
 
+pub fn (mut this Email) get_bcc() &C._InternetAddressList {
+	return C.g_mime_message_get_bcc (this.message)
+}
+
 // set from
-pub fn (mut this Email) add_from(value string) {
-	parse_address(value, fn [this](fullname string, emailaddress string, cset string) {
+pub fn (mut this Email) add_from(value &AddressList) {
+	value.iterate(fn [this](fullname string, emailaddress string, cset string) {
 		C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_FROM), cstr(fullname), cstr(emailaddress))
 	})
 }
 
+pub fn (mut this Email) get_from() &C._InternetAddressList {
+	return C.g_mime_message_get_from (this.message)
+}
+
 // set sender
-pub fn (mut this Email) add_sender(value string) {
-	parse_address(value, fn [this](fullname string, emailaddress string, cset string) {
+pub fn (mut this Email) add_sender(value &AddressList) {
+	value.iterate(fn [this](fullname string, emailaddress string, cset string) {
 		C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_SENDER), cstr(fullname), cstr(emailaddress))
 	})
 }
 
+pub fn (mut this Email) get_sender() &C._InternetAddressList {
+	return C.g_mime_message_get_sender (this.message)
+}
+
 // set reply to
-pub fn (mut this Email) add_reply_to(value string) {
-	parse_address(value, fn [this](fullname string, emailaddress string, cset string) {
+pub fn (mut this Email) add_reply_to(value &AddressList) {
+	value.iterate(fn [this](fullname string, emailaddress string, cset string) {
 		C.g_mime_message_add_mailbox(this.message, C.GMimeAddressType(C.GMIME_ADDRESS_TYPE_REPLY_TO), cstr(fullname), cstr(emailaddress))
 	})
 }
 
+pub fn (mut this Email) get_reply_to() &C._InternetAddressList {
+	return C.g_mime_message_get_reply_to (this.message)
+}
+
 // set subject
 pub fn (mut this Email) set_subject(subject string) {
-	C.g_mime_message_set_subject(this.message, cstr(subject), charset)
+	C.g_mime_message_set_subject(this.message, cstr(subject), ccharset)
 }
 
 // set user agent
 pub fn (mut this Email) set_user_agent(user_agent string) {
-	C.g_mime_object_set_header(C.GMIME_OBJECT(this.message), cstr("User-Agent"), cstr(user_agent), charset)
+	C.g_mime_object_set_header(C.GMIME_OBJECT(this.message), cstr("User-Agent"), cstr(user_agent), ccharset)
 }
 
 // generate message id by suffix
@@ -99,7 +125,7 @@ pub fn (mut this Email) set_message_id(suffix string) {
 
 // set replied message id
 pub fn (mut this Email) set_in_reply_to(origin_message_id string) {
-	C.g_mime_object_set_header(C.GMIME_OBJECT(this.message), cstr("In-Reply-To"), cstr(origin_message_id), charset)
+	C.g_mime_object_set_header(C.GMIME_OBJECT(this.message), cstr("In-Reply-To"), cstr(origin_message_id), ccharset)
 }
 
 // set referenced message id
@@ -108,7 +134,7 @@ pub fn (mut this Email) set_references(value string) {
 
 // set additional headers
 pub fn (mut this Email) set_header_x(headername string, value string) {
-	C.g_mime_object_set_header(C.GMIME_OBJECT(this.message), cstr(headername), cstr(value), charset)
+	C.g_mime_object_set_header(C.GMIME_OBJECT(this.message), cstr(headername), cstr(value), ccharset)
 }
 
 // get additional headers
@@ -132,9 +158,10 @@ pub fn (mut this Email) set_text(text string) {
 	textpart := C.g_mime_text_part_new_with_subtype(cstr("plain"))
 	defer { C.g_object_unref(C.G_OBJECT(textpart)) }
 	C.g_mime_text_part_set_text(textpart, cstr(text))
-	C.g_mime_text_part_set_charset(textpart, charset)
+	C.g_mime_text_part_set_charset(textpart, ccharset)
 	C.g_mime_part_set_content_encoding(C.GMIME_PART(textpart), C.GMimeContentEncoding(C.GMIME_CONTENT_ENCODING_8BIT))
 	C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(textpart))
+	//C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(textpart))
 }
 
 // walk email parts
@@ -190,7 +217,7 @@ pub fn (mut this Email) encrypt() bool {
 pub fn (mut this Email) edit() {
 	// prepare mail
 	this.set_header_x("MIME-Version", "1.0")
-	//this.set_header_x("Content-Type", "text/plain; charset=utf-8")
+	//this.set_header_x("Content-Type", "text/plain; charset=" + charset)
 	//this.set_header_x("Content-Transfer-Encoding", "8bit")
 	mut filename := ''
 	// create temp file
@@ -204,7 +231,7 @@ pub fn (mut this Email) edit() {
 	C.g_mime_format_options_set_newline_format(format, C.GMimeNewLineFormat(C.GMIME_NEWLINE_FORMAT_DOS))
 	written := C.g_mime_object_write_to_stream(C.GMIME_OBJECT(this.message), format, stream)
 	if written <= 0 { panic('no bytes written') }
-	eprintln("written is $written")
+	eprintln("written=$written")
 	filename = tempfile
 	C.g_mime_stream_close(stream)
 	// kick off editor
@@ -212,7 +239,7 @@ pub fn (mut this Email) edit() {
 	mut p := os.new_process(editor)
 	p.set_args([
 		"+set ft=mail", // switch to email syntax
-		"+set fileencoding=utf-8", // use utf8
+		"+set fileencoding=" + charset, // use same encoding
 		"+set enc=utf-8", // use utf8
 		"+set fo+=w", // do wsf
 		"+set fo-=ro", // dont repeat ">.." on new lines
@@ -272,30 +299,33 @@ pub fn (mut this Email) attach(filename string) {
 	// C.g_mime_part_set_content_md5(part,
 	// C.g_mime_part_set_content_location(part,
 	C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(part))
-	//C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(this.multipart))
 }
 
 pub fn (mut this Email) transfer() int {
 	format := C.g_mime_format_options_get_default()
 	C.g_mime_format_options_set_newline_format(format, C.GMimeNewLineFormat(C.GMIME_NEWLINE_FORMAT_DOS))
-	mailstring := C.g_mime_object_to_string(C.GMIME_OBJECT(this.message), &format)
+	mailstring := C.g_mime_object_to_string(C.GMIME_OBJECT(this.message), format)
 	if mailstring == voidptr(0) {
 		eprintln("error getting mail as char buffer")
 		return -1
 	}
 	buffer := unsafe { mailstring.vstring() }
 	for commandline in [
-		["sendmail", "-t", ], // send the email
-		["notmuch", "insert", "+sent", "+inbox"], // store the email
+		["/tmp/test.sh", "/tmp/test.eml", ], // test
+		//["sendmail", "-t", ], // transfer / send the email
+		//["notmuch", "insert", "+sent", "+inbox"], // store the email locally
 	] {
 		mut process := os.new_process(commandline[0])
-		defer { process.close() }
 		process.set_args(commandline[1..])
+		process.set_redirect_stdio()
 		process.run()
 		process.stdin_write(buffer)
+		process.close()
 		process.wait()
-		if process.code != 0 {
-			eprintln("error running process $commandline[0]: $process.err")
+		if process.code > 0 {
+			err := process.err
+			code := process.code
+			eprintln("error running process $commandline: $code '$err'")
 			return process.code
 		}
 	}

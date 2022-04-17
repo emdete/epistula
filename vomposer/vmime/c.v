@@ -30,6 +30,7 @@ module vmime
 [heap] struct C._GMimeTextPart { }
 [heap] struct C._GPtrArray { }
 [heap] struct C._InternetAddress { }
+[heap] struct C._InternetAddressGroup { }
 [heap] struct C._InternetAddressList { }
 [heap] struct C._InternetAddressMailbox { }
 fn C.GMIME_IS_STREAM(voidptr) int
@@ -39,6 +40,7 @@ fn C.GMIME_PART(voidptr) &C._GMimePart
 fn C.GMIME_STREAM_MEM(voidptr) &C._GMimeStreamMem
 fn C.G_OBJECT(voidptr) &C.GObject
 fn C.INTERNET_ADDRESS_MAILBOX(voidptr) &C._InternetAddressMailbox
+fn C.INTERNET_ADDRESS_GROUP(voidptr) &C._InternetAddressGroup
 fn C.g_date_time_new_from_unix_utc(int) &C._GDateTime
 fn C.g_date_time_unref(&C._GDateTime)
 fn C.g_error_free(&C._GError)
@@ -62,7 +64,7 @@ fn C.g_mime_object_get_content_type(&C._GMimeObject) &C._GMimeContentType
 fn C.g_mime_object_get_header(&C._GMimeObject, &char) &char
 fn C.g_mime_object_set_header(&C._GMimeObject, &char, &char, &char)
 fn C.g_mime_object_write_to_stream(&C._GMimeObject, &C._GMimeFormatOptions, &C._GMimeStream) int
-fn C.g_mime_object_to_string(&C._GMimeObject, C._GMimeFormatOptions) &char
+fn C.g_mime_object_to_string(&C._GMimeObject, &C._GMimeFormatOptions) &char
 fn C.g_mime_parser_construct_message(&C._GMimeParser, &C._GMimeParserOptions) &C._GMimeMessage
 fn C.g_mime_parser_new_with_stream(&C._GMimeStream) &C._GMimeParser
 fn C.g_mime_parser_options_get_default() &C._GMimeParserOptions
@@ -92,7 +94,11 @@ fn C.internet_address_list_get_address(&C._InternetAddressList, int) &C._Interne
 fn C.internet_address_list_length(&C._InternetAddressList) int
 fn C.internet_address_list_parse(&C._GMimeParserOptions, &char) &C._InternetAddressList
 fn C.internet_address_mailbox_get_addr(&C._InternetAddressMailbox) &char
-fn C.internet_address_mailbox_new() &C._InternetAddress
+fn C.internet_address_mailbox_new(&char, &char) &C._InternetAddress
+fn C.internet_address_group_new(&char) &C._InternetAddress
+fn C.internet_address_group_get_members(&C._InternetAddressGroup)&C._InternetAddressList
+fn C.internet_address_group_set_members ()
+fn C.internet_address_group_add_member ()
 fn C.g_byte_array_free(&C._GByteArray, int) &char
 fn C.time(voidptr) int
 fn C.g_mime_message_get_all_recipients(&C._GMimeMessage) &C._InternetAddressList
@@ -104,6 +110,15 @@ fn C.g_file_info_get_content_type(&C._GFileInfo) &char
 fn C.g_mime_content_type_get_media_type(&C._GMimeContentType) &char
 fn C.g_mime_content_type_get_media_subtype(&C._GMimeContentType) &char
 fn C.g_mime_content_type_parse(&C._GMimeParserOptions, &char) &C._GMimeContentType
+fn C.internet_address_list_append(&C._InternetAddressList, &C._InternetAddressList)
+fn C.internet_address_list_clear(&C._InternetAddressList)
+fn C.internet_address_list_new() &C._InternetAddressList
+fn C.g_mime_message_get_from(&C._GMimeMessage) &C._InternetAddressList
+fn C.g_mime_message_get_to(&C._GMimeMessage) &C._InternetAddressList
+fn C.g_mime_message_get_cc(&C._GMimeMessage) &C._InternetAddressList
+fn C.g_mime_message_get_bcc(&C._GMimeMessage) &C._InternetAddressList
+fn C.g_mime_message_get_sender(&C._GMimeMessage) &C._InternetAddressList
+fn C.g_mime_message_get_reply_to(&C._GMimeMessage) &C._InternetAddressList
 
 fn cstr(s string) &char {
 	return &char(s.str)
