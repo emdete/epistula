@@ -69,12 +69,13 @@ fn main() {
 					attachment_list << attachment
 				}
 			}
+			text = email.get_text()
+			from_list.set(email.get_from())
+			to_list.set(email.get_to())
+			cc_list.set(email.get_cc())
+			bcc_list.set(email.get_bcc())
 			done = (status.index("not done") or { -1 }) < 0
 		}
-		from_list.set(email.get_from())
-		to_list.set(email.get_to())
-		cc_list.set(email.get_cc())
-		bcc_list.set(email.get_bcc())
 	}
 
 	if ! abort {

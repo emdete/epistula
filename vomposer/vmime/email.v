@@ -155,7 +155,7 @@ pub fn (mut this Email) set_date_now() {
 
 // set plain text
 pub fn (mut this Email) set_text(text string) {
-	textpart := C.g_mime_text_part_new_with_subtype(cstr("plain"))
+	textpart := C.g_mime_text_part_new()
 	defer { C.g_object_unref(C.G_OBJECT(textpart)) }
 	C.g_mime_text_part_set_text(textpart, cstr(text))
 	C.g_mime_text_part_set_charset(textpart, ccharset)
@@ -164,8 +164,24 @@ pub fn (mut this Email) set_text(text string) {
 	//C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(textpart))
 }
 
+pub fn (mut this Email) get_text() string {
+	mut text := ""
+	rtext := &text
+	this.walk(fn [rtext](obj &C._GMimeObject) bool {
+		eprintln("obj")
+		if C.GMIME_IS_TEXT_PART(obj) != 0 {
+			unsafe { *rtext = C.g_mime_text_part_get_text(C.GMIME_TEXT_PART(obj)).vstring() }
+			eprintln("text '$rtext'")
+			return false
+		}
+		return true
+	})
+	eprintln("text '$text'")
+	return text
+}
+
 // walk email parts
-pub fn (mut this Email) mail_walk(callback fn (&C._GMimeObject) bool) {
+pub fn (mut this Email) walk(callback fn (&C._GMimeObject) bool) {
 	iter := C.g_mime_part_iter_new (C.GMIME_OBJECT(this.message))
 	defer { C.g_mime_part_iter_free (iter) }
 	mut more := true

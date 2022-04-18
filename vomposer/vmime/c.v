@@ -41,6 +41,8 @@ fn C.GMIME_STREAM_MEM(voidptr) &C._GMimeStreamMem
 fn C.G_OBJECT(voidptr) &C.GObject
 fn C.INTERNET_ADDRESS_MAILBOX(voidptr) &C._InternetAddressMailbox
 fn C.INTERNET_ADDRESS_GROUP(voidptr) &C._InternetAddressGroup
+fn C.GMIME_IS_TEXT_PART(voidptr) int
+fn C.GMIME_TEXT_PART(voidptr) &C._GMimeTextPart
 fn C.g_date_time_new_from_unix_utc(int) &C._GDateTime
 fn C.g_date_time_unref(&C._GDateTime)
 fn C.g_error_free(&C._GError)
@@ -81,6 +83,8 @@ fn C.g_mime_stream_fs_open(&char, int, int, &&C._GError) &C._GMimeStream
 fn C.g_mime_stream_mem_get_byte_array(&C._GMimeStreamMem) &C._GByteArray
 fn C.g_mime_stream_mem_new() &C._GMimeStream
 fn C.g_mime_text_part_new_with_subtype(&char) &C._GMimeTextPart
+fn C.g_mime_text_part_new() &C._GMimeTextPart
+fn C.g_mime_text_part_get_text(&C._GMimeTextPart) &char
 fn C.g_mime_text_part_set_charset(&C._GMimeTextPart, &char)
 fn C.g_mime_text_part_set_text(&C._GMimeTextPart, &char)
 fn C.g_mime_utils_generate_message_id(&char) &char
