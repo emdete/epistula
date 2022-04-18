@@ -18,7 +18,7 @@ You need a program to get the emails to your computer, various solutions are ava
 
 While Epistula is console based it needs a way to start another terminal for composing emails. For now this is hardcoded to be a graphical terminal `gnome-terminal` which needs to be installed.
 
-The mails will be written with you favourite editor which is determined by the environment variable `EDITOR` which defaults to [nvim](http://neovim.org/) if not set.
+The mails will be written with your favourite editor which is determined by the environment variable `EDITOR` which defaults to [nvim](http://neovim.org/) if not set.
 
 HTML parts are dumped to pure text using [elinks](http://elinks.cz/) which should be installed as well.
 
@@ -34,7 +34,7 @@ Epistula consists of two programs doing a single job each:
 
 The browser shows your emails as threads and allows input of [search terms](https://notmuchmail.org/manpages/notmuch-search-terms-7/). The composer just kicks of the editor with a prepared email. It has no own UI yet so you have to put in fields in the header (To, CC, Bcc, Subject, ..) and the mail body. After that the mail is given over to the MTA.
 
-The composer can be used to serve mailto: urls from a browser, a .desktop file is included.
+The composer can be used to serve mailto: urls from a browser, a .desktop file to achieve that is included.
 
 Usage
 --
@@ -47,20 +47,21 @@ The browser has a simple set of keys to be controlled. The UI has three areas: T
 	- Tab resets the query
 	- Control X empties query
 	- Enter execute query
-	- prefix a query with ":" to actually tag the current thread, not query
+	- Prefix a query with ":" to actually tag the current thread, not query
 - Thread list:
 	- Up and down (next previous thread)
 	- Control up and down (page up/down)
 	- Control A Archive, untag inbox
 	- Control S Tag as spam
+	- Control B Tag as inbox
 - List of mails in the thread:
 	- Page-up and page-down (page through the displayed mails)
 	- Control page-up and page-down (next, previous part in the selected mail)
 	- Control J and K (next, previous mail in the thread)
 	- Control O (open part, show more lines)
 	- Control R (reply email)
-	- Control B Bounce (not done yet)
 	- Control F Forward (not done yet)
+	- Control ? Bounce (not done yet)
 - Global:
 	- Control C (compose new email)
 	- Control L Refresh screen
