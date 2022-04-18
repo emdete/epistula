@@ -18,6 +18,7 @@ TODOs
 - add [tmux](https://tmux.github.io/) integration example
 - add upload ical
 - visualize tags
+- --auto-key-locate einrichten https://wiki.gnupg.org/WKD bzw eine deutsche anleitung https://www.kuketz-blog.de/gnupg-web-key-directory-wkd-einrichten/
 
 see also
 --
