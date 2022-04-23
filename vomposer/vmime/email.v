@@ -6,40 +6,40 @@ import os
 // representing an email
 pub struct Email {
 mut:
-	session &Session
 	message &C._GMimeMessage // gmime3 mail message structure
-	multipart &C._GMimeMultipart // multipart content
+	//multipart &C._GMimeMultipart // multipart content
 }
 
 // create new from session
 pub fn (this &Session) email_new() &Email {
 	message := C.g_mime_message_new(C.gboolean(1))
-	multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
-	C.g_mime_message_set_mime_part(message, C.GMIME_OBJECT(multipart))
+	//multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
+	//C.g_mime_message_set_mime_part(message, C.GMIME_OBJECT(multipart))
+	eprintln("new message $message")
 	return &Email{
-		this
 		message
-		multipart
+		//multipart
 	}
-}
-
-// parse file from session
-pub fn (this &Session) email_parse(filename string) &C._GMimeMessage {
-	err := &C._GError(0)
-	stream := C.g_mime_stream_fs_open(cstr(filename), /*O_RDONLY*/0, 0644, &err)
-	if stream == voidptr(0) { panic( unsafe { err.message.vstring() } ) }
-	parser := C.g_mime_parser_new_with_stream(stream)
-	C.g_object_unref(C.G_OBJECT(stream))
-	message := C.g_mime_parser_construct_message(parser, /*NULL*/voidptr(0))
-	C.g_object_unref(C.G_OBJECT(parser))
-	return message
 }
 
 // free mem
 pub fn (mut this Email) close() {
+	eprintln("close message $this.message")
 	C.g_object_unref(C.G_OBJECT(this.message))
-	C.g_object_unref(C.G_OBJECT(this.multipart))
+	//C.g_object_unref(C.G_OBJECT(this.multipart))
 
+}
+
+// parse file
+pub fn (mut this Email) parse(filename string) {
+	err := &C._GError(0)
+	stream := C.g_mime_stream_fs_open(cstr(filename), /*O_RDONLY*/0, 0644, &err)
+	if stream == voidptr(0) { panic( unsafe { err.message.vstring() } ) }
+	defer { C.g_object_unref(C.G_OBJECT(stream)) }
+	parser := C.g_mime_parser_new_with_stream(stream)
+	defer { C.g_object_unref(C.G_OBJECT(parser)) }
+	C.g_object_unref(C.G_OBJECT(this.message))
+	this.message = C.g_mime_parser_construct_message(parser, /*NULL*/voidptr(0))
 }
 
 // set to
@@ -111,6 +111,10 @@ pub fn (mut this Email) get_reply_to() &C._InternetAddressList {
 // set subject
 pub fn (mut this Email) set_subject(subject string) {
 	C.g_mime_message_set_subject(this.message, cstr(subject), ccharset)
+}
+
+pub fn (mut this Email) get_subject() string {
+	return unsafe { C.g_mime_message_get_subject(this.message).vstring() }
 }
 
 // set user agent
@@ -196,8 +200,10 @@ pub fn (mut this Email) walk(callback fn (&C._GMimeObject) bool) {
 
 // encrypt email
 pub fn (mut this Email) encrypt() bool {
+	multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
 	mut ret := false
 	ctx := C.g_mime_gpg_context_new()
+	defer { C.g_object_unref(C.G_OBJECT(ctx)) }
 	// determine all recipients
 	recipients := C.g_ptr_array_new()
 	defer { C.g_ptr_array_free(recipients, /*C.TRUE*/1) }
@@ -211,21 +217,20 @@ pub fn (mut this Email) encrypt() bool {
 	// TODO C.g_ptr_array_add(recipients, cstr(myself)) // always encrypt for myself
 	// try to encrypt for all recipients
 	err := &C._GError(0)
-	encrypted := C.g_mime_multipart_encrypted_encrypt(ctx, C.G_OBJECT(this.multipart), /*FALSE*/0, voidptr(0), 0, recipients, &err)
+	encrypted := C.g_mime_multipart_encrypted_encrypt(ctx, C.G_OBJECT(multipart), /*FALSE*/0, voidptr(0), 0, recipients, &err)
 	if encrypted == voidptr(0) {
 		// encryption failed
 		m := unsafe { err.message.vstring() }
 		eprintln("encryption failed: '$m'")
 		C.g_error_free(err)
 		// plain
-		C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(this.multipart))
+		C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(multipart))
 	} else {
 		// encrypted
 		C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(encrypted))
 		C.g_object_unref(C.G_OBJECT(encrypted))
 		ret = true
 	}
-	C.g_object_unref(C.G_OBJECT(ctx))
 	return ret
 }
 
@@ -265,15 +270,15 @@ pub fn (mut this Email) edit() {
 	p.run()
 	p.wait()
 	p.close()
-	C.g_object_unref(C.G_OBJECT(this.message))
-	this.message = this.session.email_parse(filename)
+	this.parse(filename)
 }
 
 pub fn (mut this Email) attach(filename string) {
 	err := &C._GError(0)
 	stream := C.g_mime_stream_fs_open(cstr(filename), /*C.O_RDONLY*/0, 0644, &err)
 	if stream == voidptr(0) {
-		return //error("file $filename not attached, $err.message")
+		eprintln("file $filename not attached, $err.message")
+		return
 	}
 	defer { C.g_object_unref(C.G_OBJECT(stream)) }
 	mut type_ := "application"
@@ -314,7 +319,8 @@ pub fn (mut this Email) attach(filename string) {
 	// C.g_mime_part_set_content_id(part,
 	// C.g_mime_part_set_content_md5(part,
 	// C.g_mime_part_set_content_location(part,
-	C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(part))
+	//C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(part))
+	eprintln("terminate")
 }
 
 pub fn (mut this Email) transfer() int {

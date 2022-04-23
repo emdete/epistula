@@ -59,6 +59,7 @@ fn C.g_mime_message_set_date(&C._GMimeMessage, &C._GDateTime)
 fn C.g_mime_message_set_message_id(&C._GMimeMessage, &char)
 fn C.g_mime_message_set_mime_part(&C._GMimeMessage, &C._GMimeObject)
 fn C.g_mime_message_set_subject(&C._GMimeMessage, &char, &char)
+fn C.g_mime_message_get_subject(&C._GMimeMessage) &char
 fn C.g_mime_multipart_add(&C._GMimeMultipart, &C._GMimeObject)
 fn C.g_mime_multipart_encrypted_encrypt(&C._GMimeCryptoContext, &C.GObject, int, voidptr, int, &C._GPtrArray, &&C._GError) &C.GMimeMultipartEncrypted
 fn C.g_mime_multipart_new_with_subtype(&char) &C._GMimeMultipart

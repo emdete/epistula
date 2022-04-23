@@ -42,38 +42,40 @@ fn main() {
 	mut done := false
 	mut abort := false
 	for ! done && ! abort {
-		mut email := session.email_new()
-		defer { email.close() }
-		email.add_from(from_list)
-		email.add_to(to_list)
-		email.add_cc(cc_list)
-		email.add_bcc(bcc_list)
+		mut edit_mail := session.email_new()
+		defer { edit_mail.close() }
+		edit_mail.add_from(from_list)
+		edit_mail.add_to(to_list)
+		edit_mail.add_cc(cc_list)
+		edit_mail.add_bcc(bcc_list)
+		edit_mail.set_subject(subject)
 		if attachment_list.len == 0 {
-			email.set_header_x("X-Epistula-Attachments", "#put space delimted list of filenames here#")
+			edit_mail.set_header_x("X-Epistula-Attachments", "#put space delimted list of filenames here#")
 		} else {
-			email.set_header_x("X-Epistula-Attachments", attachment_list.join(" "))
+			edit_mail.set_header_x("X-Epistula-Attachments", attachment_list.join(" "))
 		}
-		email.set_header_x("X-Epistula-Status", "I am not done")
-		email.set_header_x("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'. Add a 'abort' to abort sending (editings lost).")
-		email.set_text(text)
-		email.edit()
+		edit_mail.set_header_x("X-Epistula-Status", "I am not done")
+		edit_mail.set_header_x("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'. Add a 'abort' to abort sending (editings lost).")
+		edit_mail.set_text(text)
+		edit_mail.edit()
 
-		status := email.get_header("X-Epistula-Status")
+		status := edit_mail.get_header("X-Epistula-Status")
 		abort = (status.index("abort") or { -1 }) >= 0
 		if ! abort {
 			attachment_list.clear()
-			attachments := email.get_header("X-Epistula-Attachments")
+			attachments := edit_mail.get_header("X-Epistula-Attachments")
 			if ! attachments.starts_with("#") {
 				for attachment in attachments.split(" ") {
 					eprintln("attachment $attachment")
 					attachment_list << attachment
 				}
 			}
-			text = email.get_text()
-			from_list.set(email.get_from())
-			to_list.set(email.get_to())
-			cc_list.set(email.get_cc())
-			bcc_list.set(email.get_bcc())
+			text = edit_mail.get_text()
+			subject = edit_mail.get_subject()
+			from_list.set(edit_mail.get_from())
+			to_list.set(edit_mail.get_to())
+			cc_list.set(edit_mail.get_cc())
+			bcc_list.set(edit_mail.get_bcc())
 			done = (status.index("not done") or { -1 }) < 0
 		}
 	}
@@ -105,7 +107,7 @@ fn main() {
 }
 
 fn read_file(filename string) string {
-	mut buffer := []byte{}
+	mut buffer := []u8{}
 	buffer = os.read_bytes(filename) or { panic(err) }
 	return buffer.bytestr()
 }
