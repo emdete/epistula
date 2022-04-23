@@ -6,8 +6,6 @@ TEMPFILE=/tmp/epistula-vomposer-tmp
 all: epistula-vomposer
 
 run: epistula-vomposer
-
-dbg: epistula-vomposer
 	echo € > $(TEMPFILE)
 	./$< \
 			--bcc="M. <mdt@emdete.de>" \
@@ -20,6 +18,9 @@ dbg: epistula-vomposer
 			--text=/etc/hostname \
 			--to="M. <mdt@emdete.de>" \
 		> /tmp/epistula-vomposer
+
+dbg:
+	make -C .. dbg
 
 epistula-vomposer: epistula-vomposer.v vmime/*.v
 	v $(VFLAGS) epistula-vomposer.v
