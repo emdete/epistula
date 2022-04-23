@@ -1,16 +1,11 @@
 #!/usr/bin/env make -f
-CFLAGS=`pkg-config --cflags gmime-3.0`
-LDFLAGS=`pkg-config --libs gmime-3.0`
 VFLAGS=-show-c-output -showcc -g -keepc -cg
 VFLAGS=-keepc -cg
 TEMPFILE=/tmp/epistula-vomposer-tmp
 
-all: cmime
-	./$< \
-		> /tmp/cmime
+all: epistula-vomposer
 
 run: epistula-vomposer
-
 
 dbg: epistula-vomposer
 	echo € > $(TEMPFILE)
@@ -32,8 +27,9 @@ epistula-vomposer: epistula-vomposer.v vmime/*.v
 uitest: uitest.v
 	v $(VFLAGS) uitest.v
 
-cmime.o: cmime.c
+win:
+	v -o epistula-vomposer.exe -os windows epistula-vomposer.v
 
-cmime: cmime.o
-	gcc -o cmime cmime.o $(LDFLAGS)
+and:
+	v -o epistula-vomposer.apk -os android epistula-vomposer.v
 
