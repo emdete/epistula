@@ -24,6 +24,6 @@ pipeline:
       - ldd browser/epistula-browser
       - file composer/epistula-composer
       - ldd composer/epistula-composer
-      - vomposer/vmime > /tmp/vmime.eml
-      - file /tmp/vmime.eml
+      - file vomposer/epistula-vomposer
+      - ldd vomposer/epistula-vomposer
 
