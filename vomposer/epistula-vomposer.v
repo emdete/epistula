@@ -18,6 +18,7 @@ fn main() {
 	mut references := ""
 	mut subject := ""
 	mut text := ""
+	mut pid := 0
 	for arg in os.args[1..] {
 		if arg.starts_with("--") {
 			x := arg[2..].split_nth('=', 2)
@@ -27,6 +28,7 @@ fn main() {
 				"bcc" { bcc_list.add(x[1]) }
 				"from" { from_list.add(x[1]) }
 				"reply-to" { reply_to_list.add(x[1]) }
+				"pid" { pid = x[1].int() }
 				"sender" { sender_list.add(x[1]) }
 				"message-id" { in_reply_to = x[1] }
 				"references" { references = x[1] }
@@ -99,8 +101,15 @@ fn main() {
 		for attachment in attachment_list {
 			email.attach(attachment)
 		}
-		email.encrypt()
+		//email.encrypt()
 		email.transfer()
+		if pid > 0 {
+			sig := int(os.Signal.usr1)
+			eprintln("kill -s $sig $pid")
+			if C.kill(pid, sig) != 0 {
+				eprintln("error sending signal")
+			}
+		}
 	} else {
 		eprintln("aborted")
 	}

@@ -7,18 +7,18 @@ import os
 pub struct Email {
 mut:
 	message &C._GMimeMessage // gmime3 mail message structure
-	//multipart &C._GMimeMultipart // multipart content
+	multipart &C._GMimeMultipart // multipart content
 }
 
 // create new from session
 pub fn (this &Session) email_new() &Email {
 	message := C.g_mime_message_new(C.gboolean(1))
-	//multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
-	//C.g_mime_message_set_mime_part(message, C.GMIME_OBJECT(multipart))
+	multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
+	C.g_mime_message_set_mime_part(message, C.GMIME_OBJECT(multipart))
 	eprintln("new message $message")
 	return &Email{
 		message
-		//multipart
+		multipart
 	}
 }
 
@@ -26,7 +26,7 @@ pub fn (this &Session) email_new() &Email {
 pub fn (mut this Email) close() {
 	eprintln("close message $this.message")
 	C.g_object_unref(C.G_OBJECT(this.message))
-	//C.g_object_unref(C.G_OBJECT(this.multipart))
+	C.g_object_unref(C.G_OBJECT(this.multipart))
 
 }
 
@@ -40,6 +40,7 @@ pub fn (mut this Email) parse(filename string) {
 	defer { C.g_object_unref(C.G_OBJECT(parser)) }
 	C.g_object_unref(C.G_OBJECT(this.message))
 	this.message = C.g_mime_parser_construct_message(parser, /*NULL*/voidptr(0))
+	this.multipart = C.g_mime_multipart_new_with_subtype(cstr("mixed")) // TODO: fill text in?
 }
 
 // set to
@@ -164,8 +165,8 @@ pub fn (mut this Email) set_text(text string) {
 	C.g_mime_text_part_set_text(textpart, cstr(text))
 	C.g_mime_text_part_set_charset(textpart, ccharset)
 	C.g_mime_part_set_content_encoding(C.GMIME_PART(textpart), C.GMimeContentEncoding(C.GMIME_CONTENT_ENCODING_8BIT))
-	C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(textpart))
-	//C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(textpart))
+	//C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(textpart))
+	C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(textpart))
 }
 
 pub fn (mut this Email) get_text() string {
@@ -275,12 +276,7 @@ pub fn (mut this Email) edit() {
 
 pub fn (mut this Email) attach(filename string) {
 	err := &C._GError(0)
-	stream := C.g_mime_stream_fs_open(cstr(filename), /*C.O_RDONLY*/0, 0644, &err)
-	if stream == voidptr(0) {
-		eprintln("file $filename not attached, $err.message")
-		return
-	}
-	defer { C.g_object_unref(C.G_OBJECT(stream)) }
+	// detect content time, the hard way
 	mut type_ := "application"
 	mut subtype := "octet-stream"
 	file := C.g_file_new_for_path(cstr(filename))
@@ -308,9 +304,17 @@ pub fn (mut this Email) attach(filename string) {
 		eprintln("no file")
 	}
 	eprintln("content type '$type_/$subtype'")
+	//
 	part := C.g_mime_part_new_with_type(cstr(type_), cstr(subtype))
 	defer { C.g_object_unref(C.G_OBJECT(part)) }
 	C.g_mime_part_set_filename(part, cstr(os.base(filename)))
+	// attach content
+	stream := C.g_mime_stream_fs_open(cstr(filename), /*C.O_RDONLY*/0, 0644, &err)
+	if stream == voidptr(0) {
+		eprintln("file $filename not attached, $err.message")
+		return
+	}
+	defer { C.g_object_unref(C.G_OBJECT(stream)) }
 	content := C.g_mime_data_wrapper_new_with_stream(stream, C.GMimeContentEncoding(C.GMIME_CONTENT_ENCODING_DEFAULT))
 	defer { C.g_object_unref(C.G_OBJECT(content)) }
 	C.g_mime_part_set_content(part, content)
@@ -319,7 +323,7 @@ pub fn (mut this Email) attach(filename string) {
 	// C.g_mime_part_set_content_id(part,
 	// C.g_mime_part_set_content_md5(part,
 	// C.g_mime_part_set_content_location(part,
-	//C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(part))
+	C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(part))
 	eprintln("terminate")
 }
 
@@ -334,9 +338,10 @@ pub fn (mut this Email) transfer() int {
 	buffer := unsafe { mailstring.vstring() }
 	for commandline in [
 		["/tmp/test.sh", "/tmp/test.eml", ], // test
-		//["sendmail", "-t", ], // transfer / send the email
-		//["notmuch", "insert", "+sent", "+inbox"], // store the email locally
+		["/usr/sbin/sendmail", "-t", ], // transfer / send the email
+		["/usr/bin/notmuch", "insert", "--decrypt=true", "+sent", "+inbox"], // store the email locally
 	] {
+		eprintln("running process $commandline")
 		mut process := os.new_process(commandline[0])
 		process.set_args(commandline[1..])
 		process.set_redirect_stdio()
@@ -350,7 +355,9 @@ pub fn (mut this Email) transfer() int {
 			eprintln("error running process $commandline: $code '$err'")
 			return process.code
 		}
+		eprintln("done step")
 	}
+	eprintln("done transfering email")
 	return 0
 }
 

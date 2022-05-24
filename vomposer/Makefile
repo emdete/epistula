@@ -28,6 +28,9 @@ epistula-vomposer: epistula-vomposer.v vmime/*.v
 uitest: uitest.v
 	v $(VFLAGS) uitest.v
 
+up:
+	v up
+
 win:
 	v -o epistula-vomposer.exe -os windows epistula-vomposer.v
 
