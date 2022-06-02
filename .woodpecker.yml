@@ -7,13 +7,12 @@ pipeline:
       - apt-get update
       - apt-get install -y libnotmuch-dev libgmime-3.0-dev libgpgme-dev
       - (cd browser && go build)
-      - (cd composer && go build)
       - echo -- -- vlang
       - apt-get install -y curl unzip make
       - curl -O -L https://github.com/vlang/v/releases/latest/download/v_linux.zip
       - unzip v_linux.zip
       - v/v symlink
-      - (cd vomposer && make epistula-vomposer)
+      - (cd composer && make epistula-composer)
   a-test-step:
     image: golang
     commands:
@@ -24,6 +23,4 @@ pipeline:
       - ldd browser/epistula-browser
       - file composer/epistula-composer
       - ldd composer/epistula-composer
-      - file vomposer/epistula-vomposer
-      - ldd vomposer/epistula-vomposer
 

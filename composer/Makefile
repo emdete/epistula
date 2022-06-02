@@ -1,11 +1,11 @@
 #!/usr/bin/env make -f
 VFLAGS=-show-c-output -showcc -g -keepc -cg
 VFLAGS=-keepc -cg
-TEMPFILE=/tmp/epistula-vomposer-tmp
+TEMPFILE=/tmp/epistula-composer-tmp
 
-all: epistula-vomposer
+all: epistula-composer
 
-run: epistula-vomposer
+run: epistula-composer
 	echo € > $(TEMPFILE)
 	./$< \
 			--bcc="M. <mdt@emdete.de>" \
@@ -17,13 +17,14 @@ run: epistula-vomposer
 			--subject=Epistula \
 			--text=/etc/hostname \
 			--to="M. <mdt@emdete.de>" \
-		> /tmp/epistula-vomposer
+			--pid=0 \
+		> /tmp/epistula-composer
 
 dbg:
 	make -C .. dbg
 
-epistula-vomposer: epistula-vomposer.v vmime/*.v
-	v $(VFLAGS) epistula-vomposer.v
+epistula-composer: epistula-composer.v vmime/*.v
+	v $(VFLAGS) epistula-composer.v
 
 uitest: uitest.v
 	v $(VFLAGS) uitest.v
@@ -32,8 +33,8 @@ up:
 	v up
 
 win:
-	v -o epistula-vomposer.exe -os windows epistula-vomposer.v
+	v -o epistula-composer.exe -os windows epistula-composer.v
 
 and:
-	v -o epistula-vomposer.apk -os android epistula-vomposer.v
+	v -o epistula-composer.apk -os android epistula-composer.v
 

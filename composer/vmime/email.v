@@ -159,14 +159,17 @@ pub fn (mut this Email) set_date_now() {
 }
 
 // set plain text
-pub fn (mut this Email) set_text(text string) {
+pub fn (mut this Email) set_text(text string, plain bool) {
 	textpart := C.g_mime_text_part_new()
 	defer { C.g_object_unref(C.G_OBJECT(textpart)) }
 	C.g_mime_text_part_set_text(textpart, cstr(text))
 	C.g_mime_text_part_set_charset(textpart, ccharset)
 	C.g_mime_part_set_content_encoding(C.GMIME_PART(textpart), C.GMimeContentEncoding(C.GMIME_CONTENT_ENCODING_8BIT))
-	//C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(textpart))
-	C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(textpart))
+	if plain {
+		C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(textpart))
+	} else {
+		C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(textpart))
+	}
 }
 
 pub fn (mut this Email) get_text() string {

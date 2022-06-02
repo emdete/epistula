@@ -58,7 +58,7 @@ fn main() {
 		}
 		edit_mail.set_header_x("X-Epistula-Status", "I am not done")
 		edit_mail.set_header_x("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'. Add a 'abort' to abort sending (editings lost).")
-		edit_mail.set_text(text)
+		edit_mail.set_text(text, true)
 		edit_mail.edit()
 
 		status := edit_mail.get_header("X-Epistula-Status")
@@ -97,7 +97,7 @@ fn main() {
 		if in_reply_to != "" { email.set_in_reply_to(in_reply_to) }
 		if references != "" { email.set_references(references) }
 		email.set_subject(subject)
-		email.set_text(text)
+		email.set_text(text, false)
 		for attachment in attachment_list {
 			email.attach(attachment)
 		}
