@@ -1,13 +1,15 @@
-module vmime
+module gmime
 
 import io.util
 import os
+import log
 
 // representing an email
 pub struct Email {
 mut:
 	message &C._GMimeMessage // gmime3 mail message structure
 	multipart &C._GMimeMultipart // multipart content
+	logger log.Log
 }
 
 // create new from session
@@ -15,16 +17,17 @@ pub fn (this &Session) email_new() &Email {
 	message := C.g_mime_message_new(C.gboolean(1))
 	multipart := C.g_mime_multipart_new_with_subtype(cstr("mixed"))
 	C.g_mime_message_set_mime_part(message, C.GMIME_OBJECT(multipart))
-	eprintln("new message $message")
+	//this.logger.debug("new message $message")
 	return &Email{
 		message
 		multipart
+		this.logger
 	}
 }
 
 // free mem
 pub fn (mut this Email) close() {
-	eprintln("close message $this.message")
+	this.logger.debug("close message $this.message")
 	C.g_object_unref(C.G_OBJECT(this.message))
 	C.g_object_unref(C.G_OBJECT(this.multipart))
 
@@ -111,11 +114,19 @@ pub fn (mut this Email) get_reply_to() &C._InternetAddressList {
 
 // set subject
 pub fn (mut this Email) set_subject(subject string) {
-	C.g_mime_message_set_subject(this.message, cstr(subject), ccharset)
+	this.logger.info("set subject=$subject")
+	sbjct := cstr(subject)
+	C.g_mime_message_set_subject(this.message, sbjct, ccharset)
 }
 
 pub fn (mut this Email) get_subject() string {
-	return unsafe { C.g_mime_message_get_subject(this.message).vstring() }
+	sbjct := C.g_mime_message_get_subject(this.message)
+	if sbjct != voidptr(0) {
+		subject := unsafe { sbjct.vstring() }
+		this.logger.info("get subject=$subject")
+		return "" + subject
+	}
+	return ""
 }
 
 // set user agent
@@ -134,11 +145,11 @@ pub fn (mut this Email) set_in_reply_to(origin_message_id string) {
 }
 
 // set referenced message id
-pub fn (mut this Email) set_references(value string) {
-}
-
+//pub fn (mut this Email) set_references(value string) {
+//}
+//
 // set additional headers
-pub fn (mut this Email) set_header_x(headername string, value string) {
+pub fn (mut this Email) set_header(headername string, value string) {
 	C.g_mime_object_set_header(C.GMIME_OBJECT(this.message), cstr(headername), cstr(value), ccharset)
 }
 
@@ -163,9 +174,9 @@ pub fn (mut this Email) set_text(text string, plain bool) {
 	textpart := C.g_mime_text_part_new()
 	defer { C.g_object_unref(C.G_OBJECT(textpart)) }
 	C.g_mime_text_part_set_text(textpart, cstr(text))
-	C.g_mime_text_part_set_charset(textpart, ccharset)
-	C.g_mime_part_set_content_encoding(C.GMIME_PART(textpart), C.GMimeContentEncoding(C.GMIME_CONTENT_ENCODING_8BIT))
 	if plain {
+		C.g_mime_text_part_set_charset(textpart, ccharset)
+		C.g_mime_part_set_content_encoding(C.GMIME_PART(textpart), C.GMimeContentEncoding(C.GMIME_CONTENT_ENCODING_8BIT))
 		C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(textpart))
 	} else {
 		C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(textpart))
@@ -176,15 +187,15 @@ pub fn (mut this Email) get_text() string {
 	mut text := ""
 	rtext := &text
 	this.walk(fn [rtext](obj &C._GMimeObject) bool {
-		eprintln("obj")
+		//this.logger.debug("obj")
 		if C.GMIME_IS_TEXT_PART(obj) != 0 {
 			unsafe { *rtext = C.g_mime_text_part_get_text(C.GMIME_TEXT_PART(obj)).vstring() }
-			eprintln("text '$rtext'")
+			//this.logger.debug("text '$rtext'")
 			return false
 		}
 		return true
 	})
-	eprintln("text '$text'")
+	this.logger.debug("text '$text'")
 	return text
 }
 
@@ -225,7 +236,7 @@ pub fn (mut this Email) encrypt() bool {
 	if encrypted == voidptr(0) {
 		// encryption failed
 		m := unsafe { err.message.vstring() }
-		eprintln("encryption failed: '$m'")
+		this.logger.info("encryption failed: '$m'")
 		C.g_error_free(err)
 		// plain
 		C.g_mime_message_set_mime_part(this.message, C.GMIME_OBJECT(multipart))
@@ -240,11 +251,6 @@ pub fn (mut this Email) encrypt() bool {
 
 // kick off editor
 pub fn (mut this Email) edit() {
-	// prepare mail
-	this.set_header_x("MIME-Version", "1.0")
-	//this.set_header_x("Content-Type", "text/plain; charset=" + charset)
-	//this.set_header_x("Content-Transfer-Encoding", "8bit")
-	mut filename := ''
 	// create temp file
 	mut file, tempfile := util.temp_file(util.TempFileOptions{pattern: "epistula.vomposer."}) or { panic("temp_file failed") }
 	file.close()
@@ -256,8 +262,7 @@ pub fn (mut this Email) edit() {
 	C.g_mime_format_options_set_newline_format(format, C.GMimeNewLineFormat(C.GMIME_NEWLINE_FORMAT_DOS))
 	written := C.g_mime_object_write_to_stream(C.GMIME_OBJECT(this.message), format, stream)
 	if written <= 0 { panic('no bytes written') }
-	eprintln("written=$written")
-	filename = tempfile
+	this.logger.debug("written=$written")
 	C.g_mime_stream_close(stream)
 	// kick off editor
 	editor := "/usr/bin/nvim"
@@ -269,12 +274,12 @@ pub fn (mut this Email) edit() {
 		"+set fo+=w", // do wsf
 		"+set fo-=ro", // dont repeat ">.." on new lines
 		"+/^$", // jump to line after headers
-		filename,
+		tempfile,
 	])
 	p.run()
 	p.wait()
 	p.close()
-	this.parse(filename)
+	this.parse(tempfile)
 }
 
 pub fn (mut this Email) attach(filename string) {
@@ -301,12 +306,12 @@ pub fn (mut this Email) attach(filename string) {
 				}
 			}
 		} else {
-			eprintln("no file_info $err")
+			this.logger.info("no file_info $err")
 		}
 	} else {
-		eprintln("no file")
+		this.logger.info("no file")
 	}
-	eprintln("content type '$type_/$subtype'")
+	this.logger.info("content type '$type_/$subtype'")
 	//
 	part := C.g_mime_part_new_with_type(cstr(type_), cstr(subtype))
 	defer { C.g_object_unref(C.G_OBJECT(part)) }
@@ -314,7 +319,7 @@ pub fn (mut this Email) attach(filename string) {
 	// attach content
 	stream := C.g_mime_stream_fs_open(cstr(filename), /*C.O_RDONLY*/0, 0644, &err)
 	if stream == voidptr(0) {
-		eprintln("file $filename not attached, $err.message")
+		this.logger.info("file $filename not attached, $err.message")
 		return
 	}
 	defer { C.g_object_unref(C.G_OBJECT(stream)) }
@@ -327,7 +332,7 @@ pub fn (mut this Email) attach(filename string) {
 	// C.g_mime_part_set_content_md5(part,
 	// C.g_mime_part_set_content_location(part,
 	C.g_mime_multipart_add(this.multipart, C.GMIME_OBJECT(part))
-	eprintln("terminate")
+	this.logger.info("terminate")
 }
 
 pub fn (mut this Email) transfer() int {
@@ -335,16 +340,16 @@ pub fn (mut this Email) transfer() int {
 	C.g_mime_format_options_set_newline_format(format, C.GMimeNewLineFormat(C.GMIME_NEWLINE_FORMAT_DOS))
 	mailstring := C.g_mime_object_to_string(C.GMIME_OBJECT(this.message), format)
 	if mailstring == voidptr(0) {
-		eprintln("error getting mail as char buffer")
+		this.logger.info("error getting mail as char buffer")
 		return -1
 	}
 	buffer := unsafe { mailstring.vstring() }
 	for commandline in [
-		["/tmp/test.sh", "/tmp/test.eml", ], // test
+		// ["/tmp/test.sh", "/tmp/test.eml", ], // test
 		["/usr/sbin/sendmail", "-t", ], // transfer / send the email
 		["/usr/bin/notmuch", "insert", "--decrypt=true", "+sent", "+inbox"], // store the email locally
 	] {
-		eprintln("running process $commandline")
+		this.logger.info("running process $commandline")
 		mut process := os.new_process(commandline[0])
 		process.set_args(commandline[1..])
 		process.set_redirect_stdio()
@@ -355,12 +360,12 @@ pub fn (mut this Email) transfer() int {
 		if process.code > 0 {
 			err := process.err
 			code := process.code
-			eprintln("error running process $commandline: $code '$err'")
+			this.logger.info("error running process $commandline: $code '$err'")
 			return process.code
 		}
-		eprintln("done step")
+		this.logger.info("done step")
 	}
-	eprintln("done transfering email")
+	this.logger.info("done transfering email")
 	return 0
 }
 

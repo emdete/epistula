@@ -23,7 +23,7 @@ run: epistula-composer
 dbg:
 	make -C .. dbg
 
-epistula-composer: epistula-composer.v vmime/*.v
+epistula-composer: epistula-composer.v gmime/*.v
 	v $(VFLAGS) epistula-composer.v
 
 uitest: uitest.v

@@ -1,4 +1,4 @@
-module vmime
+module gmime
 
 const (
 	charset = "UTF-8"
