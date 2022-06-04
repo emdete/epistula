@@ -1,46 +1,64 @@
 import vmime
+import notmuchconfig
 
 // see https://github.com/vlang/v/blob/master/doc/docs.md
 // see https://modules.vlang.io/
 import os
 
 fn main() {
+	config := notmuchconfig.new_config()
 	mut session := vmime.session_open()
 	defer { session.close() }
-	mut to_list := session.address_list_new()
-	mut cc_list := session.address_list_new()
-	mut bcc_list := session.address_list_new()
-	mut from_list := session.address_list_new()
-	mut sender_list := session.address_list_new()
-	mut reply_to_list := session.address_list_new()
 	mut attachment_list := []string{}
+	mut bcc_list := session.address_list_new()
+	mut cc_list := session.address_list_new()
+	mut from_list := session.address_list_new()
 	mut in_reply_to := ""
 	mut references := ""
+	mut reply_to := ""
 	mut subject := ""
 	mut text := ""
+	mut to_list := session.address_list_new()
 	mut pid := 0
+	from_list.add(config.user_name + " <" + config.user_primary_email + ">")
 	for arg in os.args[1..] {
 		if arg.starts_with("--") {
 			x := arg[2..].split_nth('=', 2)
 			match x[0] {
-				"to" { to_list.add(x[1]) }
-				"cc" { cc_list.add(x[1]) }
-				"bcc" { bcc_list.add(x[1]) }
-				"from" { from_list.add(x[1]) }
-				"reply-to" { reply_to_list.add(x[1]) }
+				"to" {
+					to_list.add(x[1])
+				}
+				"cc" {
+					cc_list.add(x[1])
+				}
+				"bcc" {
+					bcc_list.add(x[1])
+				}
+				"from" {
+					to_list.add(x[1])
+				}
+				"reply-to" {
+					reply_to = x[1]
+					to_list.add(x[1])
+				}
 				"pid" { pid = x[1].int() }
-				"sender" { sender_list.add(x[1]) }
 				"message-id" { in_reply_to = x[1] }
 				"references" { references = x[1] }
 				"subject" { subject = x[1] }
-				"text" { text = read_file(x[1]) }
+				"text" {
+					text = read_file(x[1])
+					text = "> " + text.replace("\n", "\n> ")
+				}
 				"attachment" { attachment_list << x[1] }
-				else { eprintln("arg $x") }
+				else { eprintln("unknown arg $x") }
 			}
 		} else {
 			to_list.add(arg)
 		}
 	}
+	title := "Epistula Composer: " + config.user_name + " <" + config.user_primary_email + ">" + " to " + reply_to
+	mut stdout := os.stdout()
+	stdout.write(("\x1b]1;"+title+"\a\x1b]2;"+title+"\a").bytes())?
 	mut done := false
 	mut abort := false
 	for ! done && ! abort {
@@ -85,17 +103,16 @@ fn main() {
 	if ! abort {
 		mut email := session.email_new()
 		defer { email.close() }
-		if from_list.len() > 0 { email.add_from(from_list) }
-		if to_list.len() > 0 { email.add_to(to_list) }
-		if cc_list.len() > 0 { email.add_cc(cc_list) }
-		if bcc_list.len() > 0 { email.add_bcc(bcc_list) }
-		if sender_list.len() > 0 { email.add_sender(sender_list) }
-		if reply_to_list.len() > 0 { email.add_reply_to(reply_to_list) }
+		email.add_bcc(bcc_list)
+		email.add_cc(cc_list)
+		email.add_from(from_list)
+		email.add_reply_to(from_list)
+		email.add_to(to_list)
 		email.set_user_agent("Epistula")
 		email.set_date_now()
 		email.set_message_id("epistula.de")
-		if in_reply_to != "" { email.set_in_reply_to(in_reply_to) }
-		if references != "" { email.set_references(references) }
+		email.set_in_reply_to(in_reply_to)
+		email.set_references(references)
 		email.set_subject(subject)
 		email.set_text(text, false)
 		for attachment in attachment_list {
