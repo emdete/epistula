@@ -129,3 +129,7 @@ fn cstr(s string) &char {
 	return &char(s.str)
 }
 
+fn vstr(s &char) string {
+	return unsafe { cstring_to_vstring(s) }
+}
+

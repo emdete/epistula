@@ -1,4 +1,0 @@
-module gmime
-
-fn init() {
-}

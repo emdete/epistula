@@ -37,7 +37,7 @@ pub fn (mut this Email) close() {
 pub fn (mut this Email) parse(filename string) {
 	err := &C._GError(0)
 	stream := C.g_mime_stream_fs_open(cstr(filename), /*O_RDONLY*/0, 0644, &err)
-	if stream == voidptr(0) { panic( unsafe { err.message.vstring() } ) }
+	if stream == voidptr(0) { panic( vstr(err.message) ) }
 	defer { C.g_object_unref(C.G_OBJECT(stream)) }
 	parser := C.g_mime_parser_new_with_stream(stream)
 	defer { C.g_object_unref(C.G_OBJECT(parser)) }
@@ -122,9 +122,9 @@ pub fn (mut this Email) set_subject(subject string) {
 pub fn (mut this Email) get_subject() string {
 	sbjct := C.g_mime_message_get_subject(this.message)
 	if sbjct != voidptr(0) {
-		subject := unsafe { sbjct.vstring() }
+		subject := vstr(sbjct)
 		this.logger.info("get subject=$subject")
-		return "" + subject
+		return subject
 	}
 	return ""
 }
@@ -157,7 +157,7 @@ pub fn (mut this Email) set_header(headername string, value string) {
 pub fn (mut this Email) get_header(headername string) string {
 	headervalue := C.g_mime_object_get_header(C.GMIME_OBJECT(this.message), cstr(headername))
 	if headervalue != voidptr(0) {
-		return unsafe { headervalue.vstring() }
+		return vstr(headervalue)
 	}
 	return ""
 }
@@ -185,12 +185,12 @@ pub fn (mut this Email) set_text(text string, plain bool) {
 
 pub fn (mut this Email) get_text() string {
 	mut text := ""
-	rtext := &text
-	this.walk(fn [rtext](obj &C._GMimeObject) bool {
+	mut rtext := &text
+	this.walk(fn [mut rtext, mut this](obj &C._GMimeObject) bool {
 		//this.logger.debug("obj")
 		if C.GMIME_IS_TEXT_PART(obj) != 0 {
-			unsafe { *rtext = C.g_mime_text_part_get_text(C.GMIME_TEXT_PART(obj)).vstring() }
-			//this.logger.debug("text '$rtext'")
+			unsafe { *rtext = vstr(C.g_mime_text_part_get_text(C.GMIME_TEXT_PART(obj))) }
+			this.logger.info("text '$rtext'")
 			return false
 		}
 		return true
@@ -235,7 +235,7 @@ pub fn (mut this Email) encrypt() bool {
 	encrypted := C.g_mime_multipart_encrypted_encrypt(ctx, C.G_OBJECT(multipart), /*FALSE*/0, voidptr(0), 0, recipients, &err)
 	if encrypted == voidptr(0) {
 		// encryption failed
-		m := unsafe { err.message.vstring() }
+		m := vstr(err.message)
 		this.logger.info("encryption failed: '$m'")
 		C.g_error_free(err)
 		// plain
@@ -301,8 +301,8 @@ pub fn (mut this Email) attach(filename string) {
 				mt := C.g_mime_content_type_get_media_type(tp)
 				ms := C.g_mime_content_type_get_media_subtype(tp)
 				if mt != voidptr(0) && ms != voidptr(0) {
-					type_ = unsafe { mt.vstring() }
-					subtype = unsafe { ms.vstring() }
+					type_ = vstr(mt)
+					subtype = vstr(ms)
 				}
 			}
 		} else {
@@ -343,7 +343,7 @@ pub fn (mut this Email) transfer() int {
 		this.logger.info("error getting mail as char buffer")
 		return -1
 	}
-	buffer := unsafe { mailstring.vstring() }
+	buffer := vstr(mailstring)
 	for commandline in [
 		// ["/tmp/test.sh", "/tmp/test.eml", ], // test
 		["/usr/sbin/sendmail", "-t", ], // transfer / send the email
@@ -372,6 +372,6 @@ pub fn (mut this Email) transfer() int {
 //	C.g_mime_multipart_add(multipart, C.GMIME_OBJECT(textpart))
 //	mail_walk(mmsg, fn (part &C._GMimeObject) bool {
 //		ct := C.g_mime_object_get_content_type (C.GMIME_OBJECT(part))
-//		s := unsafe { C.g_mime_content_type_get_mime_type (ct).vstring() }
+//		s := vstr(C.g_mime_content_type_get_mime_type (ct))
 //		return true
 //	})
