@@ -9,6 +9,8 @@ Matters can be discussed in a Matrix room #epistula:emdete.de and IRC on libera 
 
 Currently the project is a bit stuck cause go-gmime doesnt support the functions needed to add attachments and go-gpgme cant encrypt an entire email.
 
+[Update]: This is no longer true. I decided not to patch & fix the  underlaying libraries but to switch from Go to [V](https://github.com/vlang/v/blob/master/doc/docs.md), because C language binding is much easier here. The composer is now written in V.
+
 Whats not contained
 --
 
