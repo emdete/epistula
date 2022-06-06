@@ -1,9 +1,10 @@
-#!/usr/bin/env make -f
+#!/usr/bin/env -S make -f
 VFLAGS=-show-c-output -showcc -g -keepc -cg
 VFLAGS=-keepc -cg
 TEMPFILE=/tmp/epistula-composer-tmp
 
 all: epistula-composer
+	echo browser done
 
 run: epistula-composer
 	echo € > $(TEMPFILE)
@@ -17,7 +18,7 @@ run: epistula-composer
 			--subject=Epistula \
 			--text=/etc/hostname \
 			--to="M. <mdt@emdete.de>" \
-			--pid=0 \
+			--pid=99 \
 		> /tmp/epistula-composer
 
 dbg:
