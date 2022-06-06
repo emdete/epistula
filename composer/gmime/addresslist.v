@@ -7,7 +7,7 @@ const (
 
 pub struct AddressList {
 mut:
-	address_list &C._InternetAddressList
+	address_list &C.InternetAddressList
 }
 
 // create new from session
@@ -30,7 +30,7 @@ pub fn (this &AddressList) add(value string) {
 	}
 }
 
-pub fn (this &AddressList) set(list &C._InternetAddressList) {
+pub fn (this &AddressList) set(list &C.InternetAddressList) {
 	C.internet_address_list_clear(this.address_list)
 	C.internet_address_list_append(this.address_list, list)
 }

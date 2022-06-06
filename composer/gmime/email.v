@@ -7,8 +7,8 @@ import log
 // representing an email
 pub struct Email {
 mut:
-	message &C._GMimeMessage // gmime3 mail message structure
-	multipart &C._GMimeMultipart // multipart content
+	message &C.GMimeMessage // gmime3 mail message structure
+	multipart &C.GMimeMultipart // multipart content
 	logger log.Log
 }
 
@@ -53,7 +53,7 @@ pub fn (mut this Email) add_to(value &AddressList) {
 	})
 }
 
-pub fn (mut this Email) get_to() &C._InternetAddressList {
+pub fn (mut this Email) get_to() &C.InternetAddressList {
 	return C.g_mime_message_get_to (this.message)
 }
 
@@ -64,7 +64,7 @@ pub fn (mut this Email) add_cc(value &AddressList) {
 	})
 }
 
-pub fn (mut this Email) get_cc() &C._InternetAddressList {
+pub fn (mut this Email) get_cc() &C.InternetAddressList {
 	return C.g_mime_message_get_cc (this.message)
 }
 
@@ -75,7 +75,7 @@ pub fn (mut this Email) add_bcc(value &AddressList) {
 	})
 }
 
-pub fn (mut this Email) get_bcc() &C._InternetAddressList {
+pub fn (mut this Email) get_bcc() &C.InternetAddressList {
 	return C.g_mime_message_get_bcc (this.message)
 }
 
@@ -86,7 +86,7 @@ pub fn (mut this Email) add_from(value &AddressList) {
 	})
 }
 
-pub fn (mut this Email) get_from() &C._InternetAddressList {
+pub fn (mut this Email) get_from() &C.InternetAddressList {
 	return C.g_mime_message_get_from (this.message)
 }
 
@@ -97,7 +97,7 @@ pub fn (mut this Email) add_sender(value &AddressList) {
 	})
 }
 
-pub fn (mut this Email) get_sender() &C._InternetAddressList {
+pub fn (mut this Email) get_sender() &C.InternetAddressList {
 	return C.g_mime_message_get_sender (this.message)
 }
 
@@ -108,7 +108,7 @@ pub fn (mut this Email) add_reply_to(value &AddressList) {
 	})
 }
 
-pub fn (mut this Email) get_reply_to() &C._InternetAddressList {
+pub fn (mut this Email) get_reply_to() &C.InternetAddressList {
 	return C.g_mime_message_get_reply_to (this.message)
 }
 
@@ -186,7 +186,7 @@ pub fn (mut this Email) set_text(text string, plain bool) {
 pub fn (mut this Email) get_text() string {
 	mut text := ""
 	mut rtext := &text
-	this.walk(fn [mut rtext, mut this](obj &C._GMimeObject) bool {
+	this.walk(fn [mut rtext, mut this](obj &C.GMimeObject) bool {
 		//this.logger.debug("obj")
 		if C.GMIME_IS_TEXT_PART(obj) != 0 {
 			unsafe { *rtext = vstr(C.g_mime_text_part_get_text(C.GMIME_TEXT_PART(obj))) }
@@ -200,7 +200,7 @@ pub fn (mut this Email) get_text() string {
 }
 
 // walk email parts
-pub fn (mut this Email) walk(callback fn (&C._GMimeObject) bool) {
+pub fn (mut this Email) walk(callback fn (&C.GMimeObject) bool) {
 	iter := C.g_mime_part_iter_new (C.GMIME_OBJECT(this.message))
 	defer { C.g_mime_part_iter_free (iter) }
 	mut more := true
@@ -376,7 +376,7 @@ pub fn (mut this Email) transfer() int {
 }
 
 //	C.g_mime_multipart_add(multipart, C.GMIME_OBJECT(textpart))
-//	mail_walk(mmsg, fn (part &C._GMimeObject) bool {
+//	mail_walk(mmsg, fn (part &C.GMimeObject) bool {
 //		ct := C.g_mime_object_get_content_type (C.GMIME_OBJECT(part))
 //		s := vstr(C.g_mime_content_type_get_mime_type (ct))
 //		return true
