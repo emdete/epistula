@@ -400,7 +400,7 @@ func (this *Mails) compose() {
 		"--working-directory=" + cwd,
 		"--",
 		"epistula-composer",
-			"--pid=" + os.Getpid(),
+			"--pid=" + string(os.Getpid()),
 		)
 	go cmd.Run()
 }
@@ -495,7 +495,7 @@ func (this *Mails) reply(message_filename string) {
 		"--working-directory=" + cwd,
 		"--",
 		"epistula-composer",
-			"--pid=" + os.Getpid(),
+			"--pid=" + string(os.Getpid()),
 			"--bcc=",
 			"--cc=" + cc,
 			"--from=" + from,
