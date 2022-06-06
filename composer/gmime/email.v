@@ -36,13 +36,13 @@ pub fn (mut this Email) close() {
 // parse file
 pub fn (mut this Email) parse(filename string) {
 	err := &C._GError(0)
-	stream := C.g_mime_stream_fs_open(cstr(filename), /*O_RDONLY*/0, 0644, &err)
-	if stream == voidptr(0) { panic( vstr(err.message) ) }
+	stream := C.g_mime_stream_fs_open(cstr(filename), C.O_RDONLY, 0644, &err)
+	if stream == C.NULL { panic( vstr(err.message) ) }
 	defer { C.g_object_unref(C.G_OBJECT(stream)) }
 	parser := C.g_mime_parser_new_with_stream(stream)
 	defer { C.g_object_unref(C.G_OBJECT(parser)) }
 	C.g_object_unref(C.G_OBJECT(this.message))
-	this.message = C.g_mime_parser_construct_message(parser, /*NULL*/voidptr(0))
+	this.message = C.g_mime_parser_construct_message(parser, C.NULL)
 	this.multipart = C.g_mime_multipart_new_with_subtype(cstr("mixed")) // TODO: fill text in?
 }
 
@@ -121,7 +121,7 @@ pub fn (mut this Email) set_subject(subject string) {
 
 pub fn (mut this Email) get_subject() string {
 	sbjct := C.g_mime_message_get_subject(this.message)
-	if sbjct != voidptr(0) {
+	if sbjct != C.NULL {
 		subject := vstr(sbjct)
 		this.logger.info("get subject=$subject")
 		return subject
@@ -156,7 +156,7 @@ pub fn (mut this Email) set_header(headername string, value string) {
 // get additional headers
 pub fn (mut this Email) get_header(headername string) string {
 	headervalue := C.g_mime_object_get_header(C.GMIME_OBJECT(this.message), cstr(headername))
-	if headervalue != voidptr(0) {
+	if headervalue != C.NULL {
 		return vstr(headervalue)
 	}
 	return ""
@@ -164,7 +164,7 @@ pub fn (mut this Email) get_header(headername string) string {
 
 // set current date
 pub fn (mut this Email) set_date_now() {
-	date := C.g_date_time_new_from_unix_utc(int(C.time(/*C.NULL*/0)))
+	date := C.g_date_time_new_from_unix_utc(int(C.time(C.NULL)))
 	C.g_mime_message_set_date(this.message, date)
 	C.g_date_time_unref(date)
 }
@@ -221,7 +221,7 @@ pub fn (mut this Email) encrypt() bool {
 	defer { C.g_object_unref(C.G_OBJECT(ctx)) }
 	// determine all recipients
 	recipients := C.g_ptr_array_new()
-	defer { C.g_ptr_array_free(recipients, /*C.TRUE*/1) }
+	defer { C.g_ptr_array_free(recipients, C.TRUE) }
 	list := C.g_mime_message_get_all_recipients (this.message)
 	defer { C.g_object_unref(C.G_OBJECT(list)) }
 	count := C.internet_address_list_length (list)
@@ -232,8 +232,8 @@ pub fn (mut this Email) encrypt() bool {
 	// TODO C.g_ptr_array_add(recipients, cstr(myself)) // always encrypt for myself
 	// try to encrypt for all recipients
 	err := &C._GError(0)
-	encrypted := C.g_mime_multipart_encrypted_encrypt(ctx, C.G_OBJECT(multipart), /*FALSE*/0, voidptr(0), 0, recipients, &err)
-	if encrypted == voidptr(0) {
+	encrypted := C.g_mime_multipart_encrypted_encrypt(ctx, C.G_OBJECT(multipart), C.FALSE, C.NULL, 0, recipients, &err)
+	if encrypted == C.NULL {
 		// encryption failed
 		m := vstr(err.message)
 		this.logger.info("encryption failed: '$m'")
@@ -256,7 +256,7 @@ pub fn (mut this Email) edit() {
 	file.close()
 	err := &C._GError(0)
 	stream := C.g_mime_stream_file_open(cstr(tempfile), cstr("w"), &err)
-	if stream == voidptr(0) { panic(err.message) }
+	if stream == C.NULL { panic(err.message) }
 	defer { C.g_object_unref(C.G_OBJECT(stream)) }
 	format := C.g_mime_format_options_get_default()
 	C.g_mime_format_options_set_newline_format(format, C.GMimeNewLineFormat(C.GMIME_NEWLINE_FORMAT_DOS))
@@ -288,19 +288,20 @@ pub fn (mut this Email) attach(filename string) {
 	mut type_ := "application"
 	mut subtype := "octet-stream"
 	file := C.g_file_new_for_path(cstr(filename))
-	if file != voidptr(0) {
+	if file != C.NULL {
 		defer { C.g_object_unref(C.G_OBJECT(file)) }
-		file_info := C.g_file_query_info(file,
-			cstr("standard::content-type,standard::type")/*C.G_FILE_ATTRIBUTE_STANDARD_TYPE "," C.G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE*/,
-			0/*G_FILE_QUERY_INFO_NONE*/, voidptr(0), &err)
-		if file_info != voidptr(0) {
+		file_info := C.g_file_query_info(file, cstr(
+			"standard::content-type,standard::type"
+			/*C.G_FILE_ATTRIBUTE_STANDARD_TYPE "," C.G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE*/
+			), C.G_FILE_QUERY_INFO_NONE, C.NULL, &err)
+		if file_info != C.NULL {
 			defer { C.g_object_unref(C.G_OBJECT(file_info)) }
 			ct := C.g_file_info_get_content_type(file_info)
-			if ct != voidptr(0) {
+			if ct != C.NULL {
 				tp := C.g_mime_content_type_parse(C.g_mime_parser_options_get_default(), ct)
 				mt := C.g_mime_content_type_get_media_type(tp)
 				ms := C.g_mime_content_type_get_media_subtype(tp)
-				if mt != voidptr(0) && ms != voidptr(0) {
+				if mt != C.NULL && ms != C.NULL {
 					type_ = vstr(mt)
 					subtype = vstr(ms)
 				}
@@ -317,8 +318,8 @@ pub fn (mut this Email) attach(filename string) {
 	defer { C.g_object_unref(C.G_OBJECT(part)) }
 	C.g_mime_part_set_filename(part, cstr(os.base(filename)))
 	// attach content
-	stream := C.g_mime_stream_fs_open(cstr(filename), /*C.O_RDONLY*/0, 0644, &err)
-	if stream == voidptr(0) {
+	stream := C.g_mime_stream_fs_open(cstr(filename), C.O_RDONLY, 0644, &err)
+	if stream == C.NULL {
 		this.logger.info("file $filename not attached, $err.message")
 		return
 	}
@@ -339,7 +340,7 @@ pub fn (mut this Email) transfer() int {
 	format := C.g_mime_format_options_get_default()
 	C.g_mime_format_options_set_newline_format(format, C.GMimeNewLineFormat(C.GMIME_NEWLINE_FORMAT_DOS))
 	mailstring := C.g_mime_object_to_string(C.GMIME_OBJECT(this.message), format)
-	if mailstring == voidptr(0) {
+	if mailstring == C.NULL {
 		this.logger.info("error getting mail as char buffer")
 		return -1
 	}
