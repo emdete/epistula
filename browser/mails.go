@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os/exec"
+	"strconv"
 	"os"
 	"strings"
 	"path/filepath"
@@ -400,7 +401,7 @@ func (this *Mails) compose() {
 		"--working-directory=" + cwd,
 		"--",
 		"epistula-composer",
-			"--pid=" + string(os.Getpid()),
+			"--pid=" + strconv.Itoa(os.Getpid()),
 		)
 	go cmd.Run()
 }
@@ -445,8 +446,8 @@ func (this *Mails) reply(message_filename string) {
 	cc := envelope.Header("Cc")
 	from := envelope.Header("From")
 	message_id := envelope.Header("Message-ID")
-	references := envelope.Header("References")
-	in_reply_to := envelope.Header("In-Reply-To")
+	//references := envelope.Header("References")
+	//in_reply_to := envelope.Header("In-Reply-To")
 	reply_to := envelope.Header("Reply-To")
 	subject := envelope.Subject()
 	to := envelope.Header("To")
@@ -495,14 +496,14 @@ func (this *Mails) reply(message_filename string) {
 		"--working-directory=" + cwd,
 		"--",
 		"epistula-composer",
-			"--pid=" + string(os.Getpid()),
+			"--pid=" + strconv.Itoa(os.Getpid()),
 			"--bcc=",
 			"--cc=" + cc,
 			"--from=" + from,
 			"--message-id=" + message_id,
-			"--references=" + references,
+			//"--references=" + references,
 			"--reply-to=" + reply_to,
-			"--in-reply-to=" + in_reply_to,
+			//"--in-reply-to=" + in_reply_to,
 			"--subject=" + subject,
 			"--text=" + tempfilename ,
 			"--to=" + to,
