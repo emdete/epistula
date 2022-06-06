@@ -14,6 +14,7 @@ fn main() {
 		}
 	defer { logger.close() }
 	logger.set_full_logpath("/tmp/epistula-composer.log")
+	logger.info("--------------------------------- composer session start")
 	mut session := gmime.session_open(logger)
 	defer { session.close() }
 	mut attachment_list := []string{}
@@ -30,6 +31,7 @@ fn main() {
 	from_list.add(config.user_name + " <" + config.user_primary_email + ">")
 	for arg in os.args[1..] {
 		if arg.starts_with("--") {
+			logger.info("arg=$arg")
 			x := arg[2..].split_nth('=', 2)
 			match x[0] {
 				"to" { to_list.add(x[1]) }
@@ -42,7 +44,8 @@ fn main() {
 				}
 				"pid" { pid = x[1].int() }
 				"message-id" { in_reply_to = x[1] }
-				"references" { } //references = x[1] }
+				//"in-reply-to" { } //
+				//"references" { } //references = x[1] }
 				"subject" { subject = x[1] }
 				"text" {
 					text = read_file(x[1])
@@ -78,6 +81,7 @@ fn main() {
 		edit_mail.set_header("X-Epistula-Status", "I am not done")
 		edit_mail.set_header("X-Epistula-Comment", "This is your MUA talking to you. Add attachments as headerfield like below. Dont destroy the mail structure, if the outcome cant be parsed you will thrown into your editor again to fix it. Change the Status to not contain 'not'. Add a 'abort' to abort sending (editings lost).")
 		edit_mail.set_text(text, true)
+		logger.flush()
 		edit_mail.edit()
 		//
 		status := edit_mail.get_header("X-Epistula-Status")
@@ -129,7 +133,7 @@ fn main() {
 		email.close()
 		if pid > 0 {
 			sig := int(os.Signal.usr1)
-			logger.info("kill -s $sig $pid")
+			logger.info("do a kill -s $sig $pid")
 			if C.kill(pid, sig) != 0 {
 				logger.info("error sending signal")
 			}

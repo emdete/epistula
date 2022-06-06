@@ -4,7 +4,7 @@ VFLAGS=-keepc -cg
 TEMPFILE=/tmp/epistula-composer-tmp
 
 all: epistula-composer
-	echo browser done
+	echo composer done
 
 run: epistula-composer
 	echo € > $(TEMPFILE)
