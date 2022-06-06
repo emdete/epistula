@@ -42,7 +42,7 @@ fn main() {
 				}
 				"pid" { pid = x[1].int() }
 				"message-id" { in_reply_to = x[1] }
-				//"references" { references = x[1] }
+				"references" { } //references = x[1] }
 				"subject" { subject = x[1] }
 				"text" {
 					text = read_file(x[1])

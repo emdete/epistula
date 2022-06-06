@@ -355,8 +355,13 @@ pub fn (mut this Email) transfer() int {
 		process.set_redirect_stdio()
 		process.run()
 		process.stdin_write(buffer)
-		process.close()
+		os.fd_close(process.stdio_fd[0])
+		o := process.stdout_slurp()
+		if o.len > 0 { this.logger.info("stdout $o") }
+		e := process.stderr_slurp()
+		if e.len > 0 { this.logger.info("stderr $e") }
 		process.wait()
+		process.close()
 		if process.code > 0 {
 			err := process.err
 			code := process.code
