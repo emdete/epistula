@@ -8,31 +8,31 @@ module gmime
 #include "gio/gio.h"
 #include "gmime/gmime.h"
 
-[heap] struct C._GError { domain int code int message &char }
-[heap] struct C.GByteArray { data &char len int}
-[heap] struct C.GObject { }
-[heap] struct C.GFileInfo { }
-[heap] struct C.GFile { }
-[heap] struct C.GDateTime { }
-[heap] struct C.GMimeContentType { }
-[heap] struct C.GMimeCryptoContext { }
-[heap] struct C.GCancellable { }
-[heap] struct C.GMimeDataWrapper { }
-[heap] struct C.GMimeFormatOptions { }
-[heap] struct C.GMimeMessage { }
-[heap] struct C.GMimeMultipart { }
-[heap] struct C.GMimeObject { }
-[heap] struct C.GMimeParser { }
-[heap] struct C.GMimeParserOptions { }
-[heap] struct C.GMimePart { }
-[heap] struct C.GMimePartIter { }
-[heap] struct C.GMimeStream { }
-[heap] struct C.GMimeTextPart { }
-[heap] struct C.GPtrArray { }
-[heap] struct C.InternetAddress { }
-[heap] struct C.InternetAddressGroup { }
-[heap] struct C.InternetAddressList { }
-[heap] struct C.InternetAddressMailbox { }
+[typedef] struct C.GError { domain int code int message &char }
+[typedef] struct C.GByteArray { data &char len int}
+[typedef] struct C.GObject { }
+[typedef] struct C.GFileInfo { }
+[typedef] struct C.GFile { }
+[typedef] struct C.GDateTime { }
+[typedef] struct C.GMimeContentType { }
+[typedef] struct C.GMimeCryptoContext { }
+[typedef] struct C.GCancellable { }
+[typedef] struct C.GMimeDataWrapper { }
+[typedef] struct C.GMimeFormatOptions { }
+[typedef] struct C.GMimeMessage { }
+[typedef] struct C.GMimeMultipart { }
+[typedef] struct C.GMimeObject { }
+[typedef] struct C.GMimeParser { }
+[typedef] struct C.GMimeParserOptions { }
+[typedef] struct C.GMimePart { }
+[typedef] struct C.GMimePartIter { }
+[typedef] struct C.GMimeStream { }
+[typedef] struct C.GMimeTextPart { }
+[typedef] struct C.GPtrArray { }
+[typedef] struct C.InternetAddress { }
+[typedef] struct C.InternetAddressGroup { }
+[typedef] struct C.InternetAddressList { }
+[typedef] struct C.InternetAddressMailbox { }
 fn C.GMIME_IS_STREAM(voidptr) int
 fn C.GMIME_OBJECT(voidptr) &C.GMimeObject
 fn C.GMIME_STREAM(voidptr) &C.GMimeStream
@@ -45,7 +45,7 @@ fn C.GMIME_IS_TEXT_PART(voidptr) int
 fn C.GMIME_TEXT_PART(voidptr) &C.GMimeTextPart
 fn C.g_date_time_new_from_unix_utc(int) &C.GDateTime
 fn C.g_date_time_unref(&C.GDateTime)
-fn C.g_error_free(&C._GError)
+fn C.g_error_free(&C.GError)
 fn C.g_mime_charset_map_shutdown()
 fn C.g_mime_content_type_get_mime_type(&C.GMimeContentType) &char
 fn C.g_mime_data_wrapper_new_with_stream(&C.GMimeStream, C.GMimeContentEncoding) &C.GMimeDataWrapper
@@ -61,7 +61,7 @@ fn C.g_mime_message_set_mime_part(&C.GMimeMessage, &C.GMimeObject)
 fn C.g_mime_message_set_subject(&C.GMimeMessage, &char, &char)
 fn C.g_mime_message_get_subject(&C.GMimeMessage) &char
 fn C.g_mime_multipart_add(&C.GMimeMultipart, &C.GMimeObject)
-fn C.g_mime_multipart_encrypted_encrypt(&C.GMimeCryptoContext, &C.GObject, int, voidptr, int, &C.GPtrArray, &&C._GError) &C.GMimeMultipartEncrypted
+fn C.g_mime_multipart_encrypted_encrypt(&C.GMimeCryptoContext, &C.GObject, int, voidptr, int, &C.GPtrArray, &&C.GError) &C.GMimeMultipartEncrypted
 fn C.g_mime_multipart_new_with_subtype(&char) &C.GMimeMultipart
 fn C.g_mime_object_get_content_type(&C.GMimeObject) &C.GMimeContentType
 fn C.g_mime_object_get_header(&C.GMimeObject, &char) &char
@@ -80,7 +80,7 @@ fn C.g_mime_part_set_content(&C.GMimePart, &C.GMimeDataWrapper)
 fn C.g_mime_part_set_content_encoding(&C.GMimePart, C.GMimeContentEncoding)
 fn C.g_mime_part_set_filename(&C.GMimePart, &char)
 fn C.g_mime_shutdown()
-fn C.g_mime_stream_fs_open(&char, int, int, &&C._GError) &C.GMimeStream
+fn C.g_mime_stream_fs_open(&char, int, int, &&C.GError) &C.GMimeStream
 fn C.g_mime_stream_mem_get_byte_array(&C.GMimeStreamMem) &C.GByteArray
 fn C.g_mime_stream_mem_new() &C.GMimeStream
 fn C.g_mime_text_part_new_with_subtype(&char) &C.GMimeTextPart
@@ -107,10 +107,10 @@ fn C.internet_address_group_add_member()
 fn C.g_byte_array_free(&C.GByteArray, int) &char
 fn C.time(voidptr) int
 fn C.g_mime_message_get_all_recipients(&C.GMimeMessage) &C.InternetAddressList
-fn C.g_mime_stream_file_open(&char, &char, &&C._GError) &C.GMimeStream
+fn C.g_mime_stream_file_open(&char, &char, &&C.GError) &C.GMimeStream
 fn C.g_mime_stream_close(&C.GMimeStream)
 fn C.g_file_new_for_path(&char) &C.GFile
-fn C.g_file_query_info(&C.GFile, &char, int/*C.GFileQueryInfoFlags*/, &C.GCancellable, &&C._GError) &C.GFileInfo
+fn C.g_file_query_info(&C.GFile, &char, int/*C.GFileQueryInfoFlags*/, &C.GCancellable, &&C.GError) &C.GFileInfo
 fn C.g_file_info_get_content_type(&C.GFileInfo) &char
 fn C.g_mime_content_type_get_media_type(&C.GMimeContentType) &char
 fn C.g_mime_content_type_get_media_subtype(&C.GMimeContentType) &char

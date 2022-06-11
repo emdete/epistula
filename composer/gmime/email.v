@@ -35,7 +35,7 @@ pub fn (mut this Email) close() {
 
 // parse file
 pub fn (mut this Email) parse(filename string) {
-	err := &C._GError(0)
+	err := &C.GError(0)
 	stream := C.g_mime_stream_fs_open(cstr(filename), C.O_RDONLY, 0644, &err)
 	if stream == C.NULL { panic( vstr(err.message) ) }
 	defer { C.g_object_unref(C.G_OBJECT(stream)) }
@@ -231,7 +231,7 @@ pub fn (mut this Email) encrypt() bool {
 	}
 	// TODO C.g_ptr_array_add(recipients, cstr(myself)) // always encrypt for myself
 	// try to encrypt for all recipients
-	err := &C._GError(0)
+	err := &C.GError(0)
 	encrypted := C.g_mime_multipart_encrypted_encrypt(ctx, C.G_OBJECT(multipart), C.FALSE, C.NULL, 0, recipients, &err)
 	if encrypted == C.NULL {
 		// encryption failed
@@ -254,7 +254,7 @@ pub fn (mut this Email) edit() {
 	// create temp file
 	mut file, tempfile := util.temp_file(util.TempFileOptions{pattern: "epistula.vomposer."}) or { panic("temp_file failed") }
 	file.close()
-	err := &C._GError(0)
+	err := &C.GError(0)
 	stream := C.g_mime_stream_file_open(cstr(tempfile), cstr("w"), &err)
 	if stream == C.NULL { panic(err.message) }
 	defer { C.g_object_unref(C.G_OBJECT(stream)) }
@@ -283,7 +283,7 @@ pub fn (mut this Email) edit() {
 }
 
 pub fn (mut this Email) attach(filename string) {
-	err := &C._GError(0)
+	err := &C.GError(0)
 	// detect content time, the hard way
 	mut type_ := "application"
 	mut subtype := "octet-stream"
