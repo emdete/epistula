@@ -26,6 +26,7 @@ fn main() {
 	mut reply_to := ""
 	mut subject := ""
 	mut text := ""
+	mut date := ""
 	mut to_list := session.address_list_new()
 	mut pid := 0
 	from_list.add(config.user_name + " <" + config.user_primary_email + ">")
@@ -47,6 +48,7 @@ fn main() {
 				//"in-reply-to" { } //
 				//"references" { } //references = x[1] }
 				"subject" { subject = x[1] }
+				"date" { date = x[1] }
 				"text" {
 					text = read_file(x[1])
 					text = "> " + text.replace("\n", "\n> ")
@@ -57,6 +59,9 @@ fn main() {
 		} else {
 			to_list.add(arg)
 		}
+	}
+	if date.len > 0 && reply_to.len > 0 && text.len > 0 {
+		text = "> " + reply_to + ", " + date + "\n" + text
 	}
 	title := "Epistula Composer: " + config.user_name + " <" + config.user_primary_email + ">" + " to " + reply_to
 	mut stdout := os.stdout()
@@ -88,12 +93,18 @@ fn main() {
 		logger.info("status=$status")
 		abort = (status.index("abort") or { -1 }) >= 0
 		if ! abort {
+			done = (status.index("not done") or { -1 }) < 0
 			attachment_list.clear()
 			attachments := edit_mail.get_header("X-Epistula-Attachments")
 			if ! attachments.starts_with("#") {
 				for attachment in attachments.split(" ") {
-					logger.info("attachment $attachment")
-					attachment_list << attachment
+					if os.exists(attachment) {
+						attachment_list << attachment
+						logger.info("attached $attachment")
+					} else {
+						logger.warn("attachment $attachment missing, removed")
+						done = false
+					}
 				}
 			}
 			text = edit_mail.get_text()
@@ -103,7 +114,6 @@ fn main() {
 			to_list.set(edit_mail.get_to())
 			cc_list.set(edit_mail.get_cc())
 			bcc_list.set(edit_mail.get_bcc())
-			done = (status.index("not done") or { -1 }) < 0
 		}
 		edit_mail.close()
 	}
@@ -127,7 +137,9 @@ fn main() {
 		for attachment in attachment_list {
 			email.attach(attachment)
 		}
-		//email.encrypt()
+		//if ! email.encrypt() {
+		//	logger.warn("Not encrypted")
+		//}
 		logger.info("sending mail")
 		email.transfer()
 		email.close()
